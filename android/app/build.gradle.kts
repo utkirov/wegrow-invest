@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -11,8 +12,8 @@ android {
         applicationId = "uz.wegrow.invest"
         minSdk = 26
         targetSdk = 34
-        versionCode = 31
-        versionName = "3.1.0-MVP"
+        versionCode = 40
+        versionName = "4.0.0-sprint1"
 
         buildConfigField("String", "DEFAULT_TUNNEL_URL", "\"https://cant-style-arab-levy.trycloudflare.com\"")
     }
@@ -67,6 +68,7 @@ dependencies {
     implementation(composeBom)
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -74,4 +76,8 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.animation:animation")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    testImplementation("junit:junit:4.13.2")
 }

@@ -18,3 +18,7 @@ server/*.db
 server/*.sqlite3
 .venv/
 venv/
+.pytest_cache/
+server/.env
+server/app/**/__pycache__/
+

@@ -4,16 +4,23 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class UserProfile(
+    val id: Int = 1,
+    val phone: String? = null,
+    val email: String? = null,
     val firstName: String = "Азиз",
     val lastName: String = "Каримов",
     val middleName: String = "Рустамович",
     val birthDate: String = "15.04.1996",
     val gender: String = "male",
     val language: String = "ru",
-    val darkTheme: Boolean = true
+    val darkTheme: Boolean = true,
+    val isGuest: Boolean = false
 ) {
     val fullName: String
         get() = "$firstName $lastName".trim()
+
+    val contactLabel: String
+        get() = phone ?: email ?: if (isGuest) "Гостевой доступ" else birthDate
 
     val initials: String
         get() {
@@ -22,6 +29,36 @@ data class UserProfile(
             return "$f$l"
         }
 }
+
+@Immutable
+data class AuthSession(
+    val accessToken: String = "",
+    val refreshToken: String = "",
+    val identifier: String = "",
+    val isGuest: Boolean = false
+) {
+    val isAuthenticated: Boolean
+        get() = accessToken.isNotBlank()
+}
+
+@Immutable
+data class OtpRequestResult(
+    val identifier: String,
+    val channel: String,
+    val expiresInSeconds: Int,
+    val devCode: String? = null
+)
+
+@Immutable
+data class StockChartData(
+    val symbol: String,
+    val timeframe: String,
+    val points: List<Float>,
+    val currentPrice: Double,
+    val periodChangeAbs: Double,
+    val periodChangePct: Double,
+    val dataSource: String = "seed"
+)
 
 @Immutable
 enum class HalalStatus {
@@ -72,8 +109,14 @@ data class StockItem(
     val reportPeriod: String,
     val revenueSegments: List<RevenueSegment>,
     val criteria: List<HalalCriterion>,
-    val chart1m: List<Float>
-)
+    val chart1m: List<Float>,
+    val charts: Map<String, List<Float>> = emptyMap(),
+    val dataSource: String = "seed"
+) {
+    fun chartForTimeframe(timeframe: String): List<Float> {
+        return charts[timeframe.uppercase()]?.takeIf { it.size >= 2 } ?: chart1m
+    }
+}
 
 @Immutable
 data class MarketIndex(
