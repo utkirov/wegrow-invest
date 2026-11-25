@@ -1026,23 +1026,27 @@ fun TickerDetailScreen(
     stock: StockItem,
     news: List<NewsItem>,
     strings: AppStrings,
+    activeTimeframe: String = "1M",
+    activeChartPoints: List<Float>? = null,
+    onSelectTimeframe: (String) -> Unit = {},
+    onRefreshStock: () -> Unit = {},
     onBack: () -> Unit,
     onOpenHalalAnalysis: (StockItem) -> Unit
 ) {
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
-    var selectedPeriod by remember { mutableStateOf("1М") }
-    val periods = remember { listOf("1Д", "1Н", "1М", "3М", "1Г", "5Л") }
+    val periods = remember {
+        listOf(
+            "1D" to "1Д",
+            "1W" to "1Н",
+            "1M" to "1М",
+            "6M" to "6М",
+            "1Y" to "1Г"
+        )
+    }
 
-    val displayedChart = remember(stock, selectedPeriod) {
-        when (selectedPeriod) {
-            "1Д" -> stock.chart1m.mapIndexed { i, v -> v * (0.996f + i * 0.0005f) }
-            "1Н" -> stock.chart1m.reversed().mapIndexed { i, v -> v * (0.985f + i * 0.002f) }
-            "3М" -> stock.chart1m.mapIndexed { i, v -> v * (0.94f + i * 0.006f) }
-            "1Г" -> stock.chart1m.mapIndexed { i, v -> v * (0.82f + i * 0.016f) }
-            "5Л" -> stock.chart1m.mapIndexed { i, v -> v * (0.55f + i * 0.042f) }
-            else -> stock.chart1m
-        }
+    val displayedChart = remember(stock, activeTimeframe, activeChartPoints) {
+        activeChartPoints?.takeIf { it.size >= 2 } ?: stock.chartForTimeframe(activeTimeframe)
     }
 
     Column(
@@ -1069,16 +1073,29 @@ fun TickerDetailScreen(
                 Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
             }
             Text(text = stock.symbol, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .bouncyClickable(haptic = true) { onOpenHalalAnalysis(stock) }
-                    .clip(CircleShape)
-                    .background(colors.surface)
-                    .border(1.dp, colors.border, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "✦", color = colors.brandPrimary, fontSize = 18.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .bouncyClickable(haptic = true, onClick = onRefreshStock)
+                        .clip(CircleShape)
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "↻", color = colors.textPrimary, fontSize = 18.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .bouncyClickable(haptic = true) { onOpenHalalAnalysis(stock) }
+                        .clip(CircleShape)
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "✦", color = colors.brandPrimary, fontSize = 18.sp)
+                }
             }
         }
 
@@ -1169,7 +1186,11 @@ fun TickerDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = strings.priceForMonth, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
-                    Text(text = "1–30 ноября", style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+                    Text(
+                        text = "${activeTimeframe.uppercase()} · ${if (stock.dataSource == "live") "LIVE" else "AAOIFI"}",
+                        style = WeGrowTextStyles.CaptionM,
+                        color = colors.textSecondary
+                    )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 InteractivePriceChart(points = displayedChart)
@@ -1182,20 +1203,20 @@ fun TickerDetailScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            periods.forEach { p ->
-                val sel = selectedPeriod == p
+            periods.forEach { (tfCode, label) ->
+                val sel = activeTimeframe.equals(tfCode, ignoreCase = true)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
-                        .bouncyClickable(haptic = true) { selectedPeriod = p }
+                        .bouncyClickable(haptic = true) { onSelectTimeframe(tfCode) }
                         .clip(RoundedCornerShape(WeGrowRadius.md))
                         .background(if (sel) colors.brandPrimary else colors.surface)
                         .border(1.dp, if (sel) colors.brandPrimary else colors.border, RoundedCornerShape(WeGrowRadius.md)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = p,
+                        text = label,
                         style = WeGrowTextStyles.LabelM,
                         color = if (sel) colors.textOnBrand else colors.textSecondary
                     )
@@ -1577,16 +1598,23 @@ fun MarketScreen(
     val isUz = strings.langCode == "uz"
     var halalOnly by remember { mutableStateOf(true) }
     var selectedSector by remember { mutableStateOf("ALL") }
+    var searchQuery by remember { mutableStateOf("") }
 
-    val filteredStocks = remember(stocks, halalOnly, selectedSector) {
+    val availableSectors = remember(stocks) {
+        stocks.map { it.sector to it.sectorUz }.distinctBy { it.first }
+    }
+
+    val filteredStocks = remember(stocks, halalOnly, selectedSector, searchQuery) {
+        val q = searchQuery.trim().lowercase()
         stocks.filter { st ->
             val passHalal = !halalOnly || st.halalStatus == HalalStatus.HALAL
-            val passSector = when (selectedSector) {
-                "TECH" -> st.sector.contains("Техно", ignoreCase = true)
-                "HEALTH" -> st.sector.contains("Здрав", ignoreCase = true)
-                else -> true
-            }
-            passHalal && passSector
+            val passSector = selectedSector == "ALL" || st.sector.equals(selectedSector, ignoreCase = true)
+            val passQuery = q.isBlank() ||
+                st.symbol.lowercase().contains(q) ||
+                st.name.lowercase().contains(q) ||
+                st.sector.lowercase().contains(q) ||
+                st.sectorUz.lowercase().contains(q)
+            passHalal && passSector && passQuery
         }
     }
 
@@ -1601,30 +1629,62 @@ fun MarketScreen(
         item(key = "market_header") {
             StaggeredReveal(0) {
                 Column {
-                    Text(text = strings.marketTitle, style = WeGrowTextStyles.DisplayM, color = colors.textPrimary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = strings.marketTitle, style = WeGrowTextStyles.DisplayM, color = colors.textPrimary)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(WeGrowRadius.full))
+                                .background(colors.brandSoft)
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "${filteredStocks.size}/${stocks.size} ${strings.marketCountLabel}",
+                                style = WeGrowTextStyles.CaptionStrong,
+                                color = if (colors.isDark) colors.brandPrimary else colors.textPrimary
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         LivePulseDot(color = colors.statusHalal, size = 8.dp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(text = marketOpenText, style = WeGrowTextStyles.BodyS, color = colors.textSecondary)
                     }
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WeGrowChip(
-                            label = strings.filterAll,
-                            selected = selectedSector == "ALL",
-                            onClick = { selectedSector = "ALL" }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        singleLine = true,
+                        placeholder = { Text(strings.marketSearchHint, style = WeGrowTextStyles.BodyS) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(WeGrowRadius.lg),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.brandPrimary,
+                            unfocusedBorderColor = colors.border,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary
                         )
-                        WeGrowChip(
-                            label = strings.filterTech,
-                            selected = selectedSector == "TECH",
-                            onClick = { selectedSector = "TECH" }
-                        )
-                        WeGrowChip(
-                            label = strings.filterHealth,
-                            selected = selectedSector == "HEALTH",
-                            onClick = { selectedSector = "HEALTH" }
-                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item(key = "sec_all") {
+                            WeGrowChip(
+                                label = strings.filterAll,
+                                selected = selectedSector == "ALL",
+                                onClick = { selectedSector = "ALL" }
+                            )
+                        }
+                        items(availableSectors, key = { it.first }) { (secRu, secUz) ->
+                            WeGrowChip(
+                                label = if (isUz) secUz else secRu,
+                                selected = selectedSector == secRu,
+                                onClick = { selectedSector = secRu }
+                            )
+                        }
                     }
                 }
             }
@@ -2707,6 +2767,7 @@ fun ProfileSettingsScreen(
     serverUrl: String,
     online: Boolean,
     isDarkTheme: Boolean,
+    isAuthenticated: Boolean = false,
     strings: AppStrings,
     onUpdateServerUrl: (String) -> Unit,
     onSyncNow: () -> Unit,
@@ -2714,7 +2775,9 @@ fun ProfileSettingsScreen(
     onSwitchLanguage: (String) -> Unit,
     onOpenQuestionnaire: () -> Unit,
     onOpenCalculator: () -> Unit,
-    onReplayOnboarding: () -> Unit
+    onReplayOnboarding: () -> Unit,
+    onOpenAuth: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
     var urlInput by remember(serverUrl) { mutableStateOf(serverUrl) }
@@ -2756,9 +2819,28 @@ fun ProfileSettingsScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = profile.fullName, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-                    Text(text = profile.birthDate, style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+                    Text(text = profile.contactLabel, style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
                 }
                 WeGrowChip(label = "✎", selected = false, onClick = onOpenQuestionnaire)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            WeGrowButton(
+                text = strings.authSignInBtn,
+                onClick = onOpenAuth,
+                outlined = isAuthenticated,
+                modifier = Modifier.weight(1f)
+            )
+            if (isAuthenticated) {
+                WeGrowButton(
+                    text = strings.authLogoutBtn,
+                    onClick = onLogout,
+                    outlined = true,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 

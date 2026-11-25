@@ -127,7 +127,23 @@ data class AppStrings(
     val connectedOnline: String,
     val offlineFallback: String,
     val editProfileBtn: String,
-    val replayOnboardingBtn: String
+    val replayOnboardingBtn: String,
+    val authTitle: String,
+    val authHeading: String,
+    val authOtpHeading: String,
+    val authSubtitle: String,
+    val authOtpSentTo: String,
+    val authIdentifierLabel: String,
+    val authCodeLabel: String,
+    val authSendCodeBtn: String,
+    val authVerifyBtn: String,
+    val authChangeContact: String,
+    val authGuestBtn: String,
+    val authFillDevCode: String,
+    val authSignInBtn: String,
+    val authLogoutBtn: String,
+    val marketSearchHint: String,
+    val marketCountLabel: String
 )
 
 val StringsRu = AppStrings(
@@ -251,7 +267,23 @@ val StringsRu = AppStrings(
     connectedOnline = "Онлайн · синхронизировано с туннелем",
     offlineFallback = "Автономный режим (локальный кэш)",
     editProfileBtn = "Анкета профиля",
-    replayOnboardingBtn = "Показать онбординг и выбор языка"
+    replayOnboardingBtn = "Показать онбординг и выбор языка",
+    authTitle = "Вход в WeGrow",
+    authHeading = "Личный кабинет",
+    authOtpHeading = "Подтверждение кода",
+    authSubtitle = "Введите телефон (+998) или Email для получения одноразового кода",
+    authOtpSentTo = "Код отправлен на",
+    authIdentifierLabel = "Телефон или Email",
+    authCodeLabel = "6-значный код подтверждения",
+    authSendCodeBtn = "Получить код",
+    authVerifyBtn = "Подтвердить и войти",
+    authChangeContact = "Изменить номер / Email",
+    authGuestBtn = "Продолжить как гость",
+    authFillDevCode = "Вставить",
+    authSignInBtn = "Войти / Сменить аккаунт",
+    authLogoutBtn = "Выйти из аккаунта",
+    marketSearchHint = "Поиск среди 105+ акций (AAPL, NVDA, сектор...)",
+    marketCountLabel = "акций"
 )
 
 val StringsUz = AppStrings(
@@ -375,5 +407,21 @@ val StringsUz = AppStrings(
     connectedOnline = "Onlayn · tunnel bilan bog'langan",
     offlineFallback = "Avtonom rejim (lokal kesh)",
     editProfileBtn = "Profil anketasi",
-    replayOnboardingBtn = "Onbording va til tanlashni ochish"
+    replayOnboardingBtn = "Onbording va til tanlashni ochish",
+    authTitle = "WeGrow ga kirish",
+    authHeading = "Shaxsiy kabinet",
+    authOtpHeading = "Kodni tasdiqlash",
+    authSubtitle = "Bir martalik kod olish uchun telefon (+998) yoki Email kiriting",
+    authOtpSentTo = "Kod yuborildi:",
+    authIdentifierLabel = "Telefon yoki Email",
+    authCodeLabel = "6 xonali tasdiqlash kodi",
+    authSendCodeBtn = "Kod olish",
+    authVerifyBtn = "Tasdiqlash va kirish",
+    authChangeContact = "Raqam / Emailni o'zgartirish",
+    authGuestBtn = "Mehmon sifatida davom etish",
+    authFillDevCode = "Kiritish",
+    authSignInBtn = "Kirish / Akkauntni almashtirish",
+    authLogoutBtn = "Akkauntdan chiqish",
+    marketSearchHint = "105+ aksiya ichidan qidirish (AAPL, NVDA, sektor...)",
+    marketCountLabel = "aksiya"
 )

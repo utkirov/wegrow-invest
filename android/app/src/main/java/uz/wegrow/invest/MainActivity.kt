@@ -1,6 +1,5 @@
 package uz.wegrow.invest
 
-import android.content.Context
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,18 +25,20 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.launch
-import uz.wegrow.invest.data.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import uz.wegrow.invest.ui.StringsRu
 import uz.wegrow.invest.ui.StringsUz
+import uz.wegrow.invest.ui.WeGrowViewModel
 import uz.wegrow.invest.ui.components.WeGrowFloatingNavBar
 import uz.wegrow.invest.ui.screens.*
+import uz.wegrow.invest.ui.screens.auth.AuthScreen
 import uz.wegrow.invest.ui.theme.WeGrowInvestTheme
 import uz.wegrow.invest.ui.theme.WeGrowTheme
 
 enum class AppRoute {
     LANGUAGE_SELECT,
     ONBOARDING,
+    AUTH,
     QUESTIONNAIRE,
     MAIN_TABS,
     TICKER_DETAIL,
@@ -49,23 +50,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences("wegrow_prefs", Context.MODE_PRIVATE)
-        val savedUrl = prefs.getString("tunnel_url", BuildConfig.DEFAULT_TUNNEL_URL) ?: BuildConfig.DEFAULT_TUNNEL_URL
-
         setContent {
-            var isDarkTheme by remember { mutableStateOf(prefs.getBoolean("dark_theme", true)) }
-            var langCode by remember { mutableStateOf(prefs.getString("lang_code", "ru") ?: "ru") }
-            var tunnelUrl by remember { mutableStateOf(savedUrl) }
+            val vm: WeGrowViewModel = viewModel()
+            val uiState by vm.uiState.collectAsState()
 
             // Dynamically adapt Edge-to-Edge system bar icon contrast to Dark/Light theme
-            DisposableEffect(isDarkTheme) {
+            DisposableEffect(uiState.isDarkTheme) {
                 enableEdgeToEdge(
-                    statusBarStyle = if (isDarkTheme) {
+                    statusBarStyle = if (uiState.isDarkTheme) {
                         SystemBarStyle.dark(AndroidColor.TRANSPARENT)
                     } else {
                         SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
                     },
-                    navigationBarStyle = if (isDarkTheme) {
+                    navigationBarStyle = if (uiState.isDarkTheme) {
                         SystemBarStyle.dark(AndroidColor.TRANSPARENT)
                     } else {
                         SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
@@ -74,49 +71,12 @@ class MainActivity : ComponentActivity() {
                 onDispose {}
             }
 
-            val fallback = remember { WeGrowRepository.defaultFallbackData() }
-            var profile by remember { mutableStateOf(fallback.profile) }
-            var stocks by remember { mutableStateOf(fallback.stocks) }
-            var goals by remember { mutableStateOf(fallback.goals) }
-            var courses by remember { mutableStateOf(fallback.courses) }
-            var news by remember { mutableStateOf(fallback.news) }
-            var indices by remember { mutableStateOf(fallback.indices) }
-            var heatmap by remember { mutableStateOf(fallback.heatmap) }
-            var marketTextRu by remember { mutableStateOf(fallback.marketOpenTextRu) }
-            var marketTextUz by remember { mutableStateOf(fallback.marketOpenTextUz) }
-            var isOnline by remember { mutableStateOf(false) }
-
-            // MVP fast startup: open directly into Home screen
             var currentRoute by remember { mutableStateOf(AppRoute.MAIN_TABS) }
             var selectedTab by remember { mutableIntStateOf(0) } // 0=Home, 1=Market, 2=Courses, 3=Profile
             var showGoalsInMain by remember { mutableStateOf(false) }
-            var activeStock by remember { mutableStateOf(stocks.first()) }
 
-            val scope = rememberCoroutineScope()
-            val strings = if (langCode == "uz") StringsUz else StringsRu
-
-            fun syncWithTunnel() {
-                scope.launch {
-                    val data = WeGrowRepository.fetchBootstrap(tunnelUrl)
-                    stocks = data.stocks
-                    goals = data.goals
-                    courses = data.courses
-                    news = data.news
-                    indices = data.indices
-                    heatmap = data.heatmap
-                    marketTextRu = data.marketOpenTextRu
-                    marketTextUz = data.marketOpenTextUz
-                    isOnline = data.online
-                    if (data.online) {
-                        profile = data.profile.copy(language = langCode, darkTheme = isDarkTheme)
-                    }
-                    activeStock = stocks.find { it.symbol == activeStock.symbol } ?: stocks.first()
-                }
-            }
-
-            LaunchedEffect(Unit) {
-                syncWithTunnel()
-            }
+            val strings = if (uiState.langCode == "uz") StringsUz else StringsRu
+            val activeStock = uiState.activeStock
 
             // Predictive Back gesture handling
             BackHandler(enabled = currentRoute != AppRoute.MAIN_TABS || showGoalsInMain || selectedTab != 0) {
@@ -134,7 +94,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            WeGrowInvestTheme(darkTheme = isDarkTheme) {
+            WeGrowInvestTheme(darkTheme = uiState.isDarkTheme) {
                 val colors = WeGrowTheme.colors
                 Box(
                     modifier = Modifier
@@ -149,13 +109,15 @@ class MainActivity : ComponentActivity() {
                                 AppRoute.TICKER_DETAIL,
                                 AppRoute.HALAL_ANALYSIS,
                                 AppRoute.CALCULATOR,
-                                AppRoute.QUESTIONNAIRE
+                                AppRoute.QUESTIONNAIRE,
+                                AppRoute.AUTH
                             )
                             val exitingSubScreen = initialState in listOf(
                                 AppRoute.TICKER_DETAIL,
                                 AppRoute.HALAL_ANALYSIS,
                                 AppRoute.CALCULATOR,
-                                AppRoute.QUESTIONNAIRE
+                                AppRoute.QUESTIONNAIRE,
+                                AppRoute.AUTH
                             )
                             when {
                                 enteringSubScreen -> {
@@ -179,36 +141,52 @@ class MainActivity : ComponentActivity() {
                         when (route) {
                             AppRoute.LANGUAGE_SELECT -> {
                                 LanguageSelectionScreen(
-                                    currentLang = langCode,
+                                    currentLang = uiState.langCode,
                                     strings = strings,
-                                    onSelectLanguage = { newLang ->
-                                        langCode = newLang
-                                        prefs.edit().putString("lang_code", newLang).apply()
-                                    },
+                                    onSelectLanguage = { vm.setLanguage(it) },
                                     onContinue = { currentRoute = AppRoute.ONBOARDING }
                                 )
                             }
 
                             AppRoute.ONBOARDING -> {
-                                val nvda = stocks.find { it.symbol == "NVDA" } ?: stocks.first()
+                                val nvda = uiState.stocks.find { it.symbol == "NVDA" } ?: activeStock
                                 OnboardingScreen(
                                     stock = nvda,
                                     strings = strings,
                                     onSkip = { currentRoute = AppRoute.MAIN_TABS },
-                                    onFinish = { currentRoute = AppRoute.QUESTIONNAIRE }
+                                    onFinish = { currentRoute = AppRoute.AUTH }
+                                )
+                            }
+
+                            AppRoute.AUTH -> {
+                                AuthScreen(
+                                    pendingOtp = uiState.pendingOtp,
+                                    isLoading = uiState.isAuthLoading,
+                                    errorMessage = uiState.authError,
+                                    strings = strings,
+                                    onRequestOtp = { vm.requestOtp(it) },
+                                    onVerifyOtp = { id, code ->
+                                        vm.verifyOtp(id, code) {
+                                            currentRoute = AppRoute.MAIN_TABS
+                                        }
+                                    },
+                                    onResetOtp = { vm.clearAuthStep() },
+                                    onContinueAsGuest = {
+                                        vm.loginAsGuest {
+                                            currentRoute = AppRoute.MAIN_TABS
+                                        }
+                                    },
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS }
                                 )
                             }
 
                             AppRoute.QUESTIONNAIRE -> {
                                 ProfileQuestionnaireScreen(
-                                    profile = profile,
+                                    profile = uiState.profile,
                                     strings = strings,
                                     onSave = { updated ->
-                                        profile = updated
+                                        vm.saveProfile(updated)
                                         currentRoute = AppRoute.MAIN_TABS
-                                        scope.launch {
-                                            WeGrowRepository.saveProfileRemote(tunnelUrl, updated)
-                                        }
                                     },
                                     onBack = { currentRoute = AppRoute.MAIN_TABS }
                                 )
@@ -217,11 +195,15 @@ class MainActivity : ComponentActivity() {
                             AppRoute.TICKER_DETAIL -> {
                                 TickerDetailScreen(
                                     stock = activeStock,
-                                    news = news.filter { it.ticker == activeStock.symbol }.ifEmpty { news },
+                                    news = uiState.news.filter { it.ticker == activeStock.symbol }.ifEmpty { uiState.news },
                                     strings = strings,
+                                    activeTimeframe = uiState.activeTimeframe,
+                                    activeChartPoints = uiState.activeChart?.takeIf { it.symbol == activeStock.symbol }?.points,
+                                    onSelectTimeframe = { tf -> vm.loadStockChart(activeStock.symbol, tf) },
+                                    onRefreshStock = { vm.refreshActiveStock() },
                                     onBack = { currentRoute = AppRoute.MAIN_TABS },
                                     onOpenHalalAnalysis = { st ->
-                                        activeStock = st
+                                        vm.selectStock(st)
                                         currentRoute = AppRoute.HALAL_ANALYSIS
                                     }
                                 )
@@ -240,28 +222,10 @@ class MainActivity : ComponentActivity() {
                                     strings = strings,
                                     onBack = { currentRoute = AppRoute.MAIN_TABS },
                                     onCreateGoalFromCalc = { title, target, monthly ->
-                                        val newGoal = FinancialGoal(
-                                            id = (goals.maxOfOrNull { it.id } ?: 3) + 1,
-                                            title = title,
-                                            titleUz = title,
-                                            targetAmount = target,
-                                            currentAmount = 0.0,
-                                            monthlyContribution = monthly,
-                                            deadlineLabel = "Из калькулятора",
-                                            deadlineLabelUz = "Kalkulyatordan",
-                                            category = "savings",
-                                            icon = "target"
-                                        )
-                                        goals = goals + newGoal
+                                        vm.createGoal(title, target, monthly, "Из калькулятора", "Kalkulyatordan")
                                         showGoalsInMain = true
                                         selectedTab = 0
                                         currentRoute = AppRoute.MAIN_TABS
-                                        scope.launch {
-                                            val remote = WeGrowRepository.createGoalRemote(tunnelUrl, title, target, monthly)
-                                            if (remote != null) {
-                                                syncWithTunnel()
-                                            }
-                                        }
                                     }
                                 )
                             }
@@ -280,34 +244,11 @@ class MainActivity : ComponentActivity() {
                                         when (activeKey) {
                                             -1 -> {
                                                 GoalsScreen(
-                                                    goals = goals,
+                                                    goals = uiState.goals,
                                                     strings = strings,
-                                                    onContributeGoal = { gid, amt ->
-                                                        goals = goals.map { g ->
-                                                            if (g.id == gid) g.copy(currentAmount = (g.currentAmount + amt).coerceAtMost(g.targetAmount))
-                                                            else g
-                                                        }
-                                                        scope.launch {
-                                                            WeGrowRepository.contributeGoalRemote(tunnelUrl, gid, amt)
-                                                        }
-                                                    },
+                                                    onContributeGoal = { gid, amt -> vm.contributeGoal(gid, amt) },
                                                     onCreateGoal = { title, target, monthly ->
-                                                        val g = FinancialGoal(
-                                                            id = (goals.maxOfOrNull { it.id } ?: 3) + 1,
-                                                            title = title,
-                                                            titleUz = title,
-                                                            targetAmount = target,
-                                                            currentAmount = 0.0,
-                                                            monthlyContribution = monthly,
-                                                            deadlineLabel = "2027",
-                                                            deadlineLabelUz = "2027",
-                                                            category = "savings",
-                                                            icon = "target"
-                                                        )
-                                                        goals = goals + g
-                                                        scope.launch {
-                                                            WeGrowRepository.createGoalRemote(tunnelUrl, title, target, monthly)
-                                                        }
+                                                        vm.createGoal(title, target, monthly)
                                                     },
                                                     onOpenCalculator = { currentRoute = AppRoute.CALCULATOR }
                                                 )
@@ -315,14 +256,14 @@ class MainActivity : ComponentActivity() {
 
                                             0 -> {
                                                 HomeScreen(
-                                                    profile = profile,
-                                                    stocks = stocks,
-                                                    goals = goals,
-                                                    news = news,
-                                                    online = isOnline,
+                                                    profile = uiState.profile,
+                                                    stocks = uiState.stocks,
+                                                    goals = uiState.goals,
+                                                    news = uiState.news,
+                                                    online = uiState.isOnline,
                                                     strings = strings,
                                                     onOpenStock = { st ->
-                                                        activeStock = st
+                                                        vm.selectStock(st)
                                                         currentRoute = AppRoute.TICKER_DETAIL
                                                     },
                                                     onOpenGoals = { showGoalsInMain = true },
@@ -330,77 +271,61 @@ class MainActivity : ComponentActivity() {
                                                     onOpenMarket = { selectedTab = 1 },
                                                     onOpenCourses = { selectedTab = 2 },
                                                     onOpenHalalAnalysis = { st ->
-                                                        activeStock = st
+                                                        vm.selectStock(st)
                                                         currentRoute = AppRoute.HALAL_ANALYSIS
                                                     },
-                                                    onToggleTheme = {
-                                                        isDarkTheme = !isDarkTheme
-                                                        prefs.edit().putBoolean("dark_theme", isDarkTheme).apply()
-                                                    },
+                                                    onToggleTheme = { vm.setDarkTheme(!uiState.isDarkTheme) },
                                                     onToggleLanguage = {
-                                                        val nextLang = if (langCode == "ru") "uz" else "ru"
-                                                        langCode = nextLang
-                                                        prefs.edit().putString("lang_code", nextLang).apply()
+                                                        vm.setLanguage(if (uiState.langCode == "ru") "uz" else "ru")
                                                     }
                                                 )
                                             }
 
                                             1 -> {
                                                 MarketScreen(
-                                                    stocks = stocks,
-                                                    indices = indices,
-                                                    heatmap = heatmap,
-                                                    marketOpenText = if (langCode == "uz") marketTextUz else marketTextRu,
+                                                    stocks = uiState.stocks,
+                                                    indices = uiState.indices,
+                                                    heatmap = uiState.heatmap,
+                                                    marketOpenText = if (uiState.langCode == "uz") uiState.marketOpenTextUz else uiState.marketOpenTextRu,
                                                     strings = strings,
                                                     onOpenStock = { st ->
-                                                        activeStock = st
+                                                        vm.selectStock(st)
                                                         currentRoute = AppRoute.TICKER_DETAIL
                                                     }
                                                 )
                                             }
 
                                             2 -> {
-                                                val firstCourse = courses.first()
+                                                val firstCourse = uiState.courses.first()
                                                 CourseScreen(
                                                     course = firstCourse,
                                                     strings = strings,
                                                     onPurchase = { provider ->
-                                                        courses = courses.map { c ->
-                                                            c.copy(
-                                                                purchased = true,
-                                                                modules = c.modules.map { it.copy(locked = false) }
-                                                            )
-                                                        }
-                                                        scope.launch {
-                                                            WeGrowRepository.purchaseCourseRemote(tunnelUrl, firstCourse.id, provider)
-                                                        }
+                                                        vm.purchaseCourse(firstCourse.id, provider)
                                                     }
                                                 )
                                             }
 
                                             else -> {
                                                 ProfileSettingsScreen(
-                                                    profile = profile,
-                                                    serverUrl = tunnelUrl,
-                                                    online = isOnline,
-                                                    isDarkTheme = isDarkTheme,
+                                                    profile = uiState.profile,
+                                                    serverUrl = uiState.serverUrl,
+                                                    online = uiState.isOnline,
+                                                    isDarkTheme = uiState.isDarkTheme,
+                                                    isAuthenticated = uiState.session.isAuthenticated,
                                                     strings = strings,
-                                                    onUpdateServerUrl = { newUrl ->
-                                                        tunnelUrl = newUrl
-                                                        prefs.edit().putString("tunnel_url", newUrl).apply()
-                                                    },
-                                                    onSyncNow = { syncWithTunnel() },
-                                                    onToggleTheme = { dark ->
-                                                        isDarkTheme = dark
-                                                        prefs.edit().putBoolean("dark_theme", dark).apply()
-                                                    },
-                                                    onSwitchLanguage = { newLang ->
-                                                        langCode = newLang
-                                                        prefs.edit().putString("lang_code", newLang).apply()
-                                                    },
+                                                    onUpdateServerUrl = { vm.updateServerUrl(it) },
+                                                    onSyncNow = { vm.syncWithServer() },
+                                                    onToggleTheme = { vm.setDarkTheme(it) },
+                                                    onSwitchLanguage = { vm.setLanguage(it) },
                                                     onOpenQuestionnaire = { currentRoute = AppRoute.QUESTIONNAIRE },
                                                     onOpenCalculator = { currentRoute = AppRoute.CALCULATOR },
-                                                    onReplayOnboarding = { currentRoute = AppRoute.LANGUAGE_SELECT }
+                                                    onReplayOnboarding = { currentRoute = AppRoute.LANGUAGE_SELECT },
+                                                    onOpenAuth = {
+                                                        vm.clearAuthStep()
+                                                        currentRoute = AppRoute.AUTH
+                                                    },
+                                                    onLogout = { vm.logout() }
                                                 )
                                             }
                                         }
