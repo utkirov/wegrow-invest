@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.core.rate_limit import SecurityAndRateLimitMiddleware
 from app.db.seed import seed_all
 from app.routers import auth, core_api, lms, market, payments, portfolio
 
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    application.add_middleware(SecurityAndRateLimitMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
