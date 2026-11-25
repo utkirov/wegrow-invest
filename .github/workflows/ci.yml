@@ -1,0 +1,64 @@
+name: WeGrow Invest CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["v4.*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend pytest (FastAPI + AAOIFI + Payme/Click)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: server/requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install --no-input -r server/requirements.txt
+      - name: Run pytest suite
+        run: python -m pytest server/tests -v
+
+  android-build:
+    name: Android Unit Tests & APK Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run Android JVM unit tests & assemble Debug APK
+        working-directory: android
+        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon
+      - name: Upload Debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wegrow-invest-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  android-release:
+    name: Build R8 Release APK (Tags v4.*)
+    if: startsWith(github.ref, 'refs/tags/v4.')
+    needs: [backend-tests, android-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble R8-optimized Release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Upload Release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wegrow-invest-release-apk
+          path: android/app/build/outputs/apk/release/app-release*.apk

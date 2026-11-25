@@ -13,9 +13,19 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 40
-        versionName = "4.0.0-sprint1"
+        versionName = "4.0.0"
+    }
 
-        buildConfigField("String", "DEFAULT_TUNNEL_URL", "\"https://cant-style-arab-levy.trycloudflare.com\"")
+    signingConfigs {
+        create("production") {
+            val ksPath = System.getenv("WEGROW_KEYSTORE_PATH")
+            if (!ksPath.isNullOrBlank()) {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("WEGROW_KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("WEGROW_KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("WEGROW_KEY_PASSWORD") ?: ""
+            }
+        }
     }
 
     buildTypes {
@@ -27,10 +37,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "DEFAULT_TUNNEL_URL", "\"https://api.wegrow.uz\"")
+            signingConfig = if (!System.getenv("WEGROW_KEYSTORE_PATH").isNullOrBlank()) {
+                signingConfigs.getByName("production")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
         debug {
             applicationIdSuffix = ""
+            buildConfigField("String", "DEFAULT_TUNNEL_URL", "\"http://10.0.2.2:8090\"")
         }
     }
 
