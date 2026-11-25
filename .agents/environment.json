@@ -1,0 +1,3 @@
+{
+  "install": "python3 -m pip install --no-input -r server/requirements.txt && if [ ! -d \"${ANDROID_HOME:-/opt/android-sdk}/platforms/android-34\" ] && command -v sdkmanager >/dev/null 2>&1; then (yes || true) | sdkmanager --licenses >/dev/null && sdkmanager \"platforms;android-34\" \"build-tools;34.0.0\"; fi && if [ -x android/gradlew ]; then (cd android && ./gradlew assembleDebug --no-daemon); else gradle -p android assembleDebug --no-daemon; fi"
+}
