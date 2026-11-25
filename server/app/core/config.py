@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     click_secret_key: str = "dev_click_secret_key"
     click_checkout_url: str = "https://my.click.uz/services/pay"
 
+    admin_api_key: str = "dev-wegrow-admin-key"
+
     allowed_origins: str = "*"
 
     @property

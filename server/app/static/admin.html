@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeGrow Admin CMS — v4.0</title>
+  <style>
+    :root {
+      --bg: #0b1410;
+      --surface: #122019;
+      --surface-2: #182b22;
+      --border: #233c30;
+      --text: #eef5f0;
+      --muted: #8ea89a;
+      --brand: #10b981;
+      --brand-soft: rgba(16, 185, 129, 0.14);
+      --warn: #eab308;
+      --warn-soft: rgba(234, 179, 8, 0.15);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(11, 20, 16, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #047857);
+      display: grid; place-items: center; font-weight: 800; color: #052e1e; font-size: 18px;
+    }
+    .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand span { font-size: 12px; color: var(--muted); display: block; }
+    .key-bar { display: flex; align-items: center; gap: 8px; }
+    input, select, textarea {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); }
+    button {
+      background: var(--brand); color: #052e1e; font-weight: 600;
+      border: none; border-radius: 10px; padding: 9px 15px;
+      cursor: pointer; font-size: 13px; transition: transform .12s, opacity .15s;
+    }
+    button:hover { opacity: 0.92; }
+    button:active { transform: scale(0.98); }
+    button.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    button.danger { background: var(--danger-soft); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+    nav {
+      display: flex; gap: 8px; padding: 16px 24px 0; max-width: 1280px; margin: 0 auto; flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+      padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 13px;
+    }
+    .tab-btn.active { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+    main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 64px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;
+    }
+    .kpi-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .kpi-val { font-size: 28px; font-weight: 700; margin-top: 6px; letter-spacing: -0.02em; }
+    .kpi-sub { font-size: 12px; color: var(--brand); margin-top: 4px; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .toolbar input { flex: 1; min-width: 220px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge {
+      display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    }
+    .badge.HALAL, .badge.PAID { background: var(--brand-soft); color: var(--brand); }
+    .badge.DOUBTFUL, .badge.PENDING { background: var(--warn-soft); color: var(--warn); }
+    .badge.HARAM, .badge.CANCELLED { background: var(--danger-soft); color: #fca5a5; }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: var(--surface-2);
+      border: 1px solid var(--brand); color: var(--text); padding: 12px 18px;
+      border-radius: 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); z-index: 50;
+    }
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.68); display: grid; place-items: center; z-index: 40; padding: 16px;
+    }
+    .modal {
+      width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 5px; }
+    .table-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">W</div>
+      <div>
+        <h1>WeGrow Admin CMS</h1>
+        <span>AAOIFI Халяль-аудит · LMS Курсы · Платежи Payme / Click</span>
+      </div>
+    </div>
+    <div class="key-bar">
+      <input id="adminKey" type="password" value="__DEFAULT_ADMIN_KEY__" placeholder="X-Admin-Key" style="width:210px" />
+      <button onclick="refreshAll()">Обновить</button>
+    </div>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('dashboard', this)">Обзор</button>
+    <button class="tab-btn" onclick="switchTab('stocks', this)">Халяль-аудит (AAOIFI)</button>
+    <button class="tab-btn" onclick="switchTab('lms', this)">LMS Уроки</button>
+    <button class="tab-btn" onclick="switchTab('orders', this)">Заказы Payme / Click</button>
+  </nav>
+
+  <main>
+    <section id="tab-dashboard">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card">
+        <h3 style="margin-bottom:8px">Быстрый доступ к API v4.0</h3>
+        <p style="color:var(--muted);font-size:13px">
+          Все изменения, сохранённые в этой панели (пересмотр AAOIFI-статусов акций, добавление уроков LMS),
+          мгновенно применяются в базе данных и отображаются в Android-приложении WeGrow Invest.
+        </p>
+      </div>
+    </section>
+
+    <section id="tab-stocks" class="hidden">
+      <div class="toolbar">
+        <input id="stockSearch" placeholder="Поиск по тикеру, названию или сектору..." oninput="loadStocks()" />
+        <select id="stockFilter" onchange="loadStocks()">
+          <option value="">Все статусы</option>
+          <option value="HALAL">Только HALAL</option>
+          <option value="DOUBTFUL">DOUBTFUL</option>
+          <option value="HARAM">HARAM</option>
+        </select>
+      </div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Тикер</th><th>Компания</th><th>Цена</th><th>Статус</th>
+              <th>Долг %</th><th>Депозиты %</th><th>Недоп. доход %</th><th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="stocksBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-lms" class="hidden">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:12px">Добавить урок в курс #1</h3>
+        <div class="form-grid" style="margin-bottom:10px">
+          <label>Название (RU)<input id="lesTitleRu" placeholder="Например: Форма W-8BEN" /></label>
+          <label>Название (UZ)<input id="lesTitleUz" placeholder="Masalan: W-8BEN shakli" /></label>
+          <label>Модуль<input id="lesMod" type="number" value="5" min="1" /></label>
+          <label>Номер урока<input id="lesNum" type="number" value="2" min="1" /></label>
+          <label>Тип<select id="lesType"><option value="article">Статья</option><option value="video">Видео</option><option value="quiz">Квиз</option></select></label>
+          <label>Длительность (мин)<input id="lesDur" type="number" value="12" min="1" /></label>
+        </div>
+        <label style="margin-bottom:10px">Конспект урока (Markdown)<textarea id="lesMd" rows="3" placeholder="## Заголовок&#10;Текст урока..."></textarea></label>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer">
+            <input id="lesPreview" type="checkbox" style="width:auto" /> Бесплатное превью (без оплаты)
+          </label>
+          <button onclick="createLesson()">+ Сохранить урок</button>
+        </div>
+      </div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Модуль</th><th>Урок (RU / UZ)</th><th>Тип</th><th>Доступ</th><th></th></tr>
+          </thead>
+          <tbody id="lessonsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-orders" class="hidden">
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr><th>Заказ</th><th>Провайдер</th><th>Сумма (UZS)</th><th>Статус</th><th>TX ID</th><th>Создан</th></tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="auditModal" class="modal-bg hidden">
+    <div class="modal">
+      <h3 id="modalTitle">Аудит AAOIFI</h3>
+      <div class="form-grid">
+        <label>Долг / Капитал (%)<input id="edDebt" type="number" step="0.1" /></label>
+        <label>Депозиты / Капитал (%)<input id="edDep" type="number" step="0.1" /></label>
+        <label>Недопустимый доход (%)<input id="edImpure" type="number" step="0.1" /></label>
+        <label>Отрасль (Override)
+          <select id="edBiz">
+            <option value="">Авто (по отрасли)</option>
+            <option value="HALAL">HALAL</option>
+            <option value="DOUBTFUL">DOUBTFUL</option>
+            <option value="HARAM">HARAM</option>
+          </select>
+        </label>
+      </div>
+      <label>Комментарий аналитика (необязательно)<input id="edNote" placeholder="Автоматический вердикт AAOIFI" /></label>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+        <button class="ghost" onclick="closeModal()">Отмена</button>
+        <button onclick="saveAudit()">Сохранить и пересчитать</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+    let editingSymbol = null;
+
+    function headers() {
+      return {
+        "Content-Type": "application/json",
+        "X-Admin-Key": document.getElementById("adminKey").value.trim()
+      };
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.remove("hidden");
+      setTimeout(() => t.classList.add("hidden"), 2800);
+    }
+
+    function switchTab(name, btn) {
+      ["dashboard", "stocks", "lms", "orders"].forEach(id => {
+        document.getElementById("tab-" + id).classList.toggle("hidden", id !== name);
+      });
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (name === "stocks") loadStocks();
+      if (name === "lms") loadLessons();
+      if (name === "orders") loadOrders();
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "HTTP " + res.status }));
+        showToast("Ошибка: " + (err.detail || res.status));
+        throw new Error(err.detail || res.status);
+      }
+      return res.json();
+    }
+
+    async function loadStats() {
+      const s = await api("/api/v1/admin/stats");
+      document.getElementById("kpiGrid").innerHTML = `
+        <div class="card"><div class="kpi-label">Всего акций США</div><div class="kpi-val">${s.stocks_total}</div><div class="kpi-sub">HALAL: ${s.stocks_halal} · DOUBTFUL: ${s.stocks_doubtful} · HARAM: ${s.stocks_haram}</div></div>
+        <div class="card"><div class="kpi-label">Пользователи</div><div class="kpi-val">${s.users_total}</div><div class="kpi-sub">Активных алертов: ${s.active_alerts}</div></div>
+        <div class="card"><div class="kpi-label">Уроков в LMS</div><div class="kpi-val">${s.lessons_total}</div><div class="kpi-sub">Курс #1 активен</div></div>
+        <div class="card"><div class="kpi-label">Выручка (Payme/Click)</div><div class="kpi-val">${s.revenue_uzs.toLocaleString("ru-RU")} сум</div><div class="kpi-sub">Оплачено заказов: ${s.orders_paid} из ${s.orders_total}</div></div>
+      `;
+    }
+
+    async function loadStocks() {
+      const q = encodeURIComponent(document.getElementById("stockSearch").value.trim());
+      const st = encodeURIComponent(document.getElementById("stockFilter").value);
+      const data = await api(`/api/v1/admin/stocks?q=${q}&halal_status=${st}`);
+      document.getElementById("stocksBody").innerHTML = data.stocks.map(s => `
+        <tr>
+          <td><strong>${s.symbol}</strong></td>
+          <td>${s.name}<div style="font-size:11px;color:var(--muted)">${s.sector} · ${s.market_cap}</div></td>
+          <td>$${s.price.toFixed(2)}</td>
+          <td><span class="badge ${s.halal_status}">${s.halal_status}</span></td>
+          <td>${s.debt_ratio_pct.toFixed(1)}%</td>
+          <td>${s.interest_deposit_ratio_pct.toFixed(1)}%</td>
+          <td>${s.impure_revenue_pct.toFixed(1)}%</td>
+          <td><button class="ghost" onclick='openAudit(${JSON.stringify(s)})'>Аудит</button></td>
+        </tr>
+      `).join("");
+    }
+
+    function openAudit(stock) {
+      editingSymbol = stock.symbol;
+      document.getElementById("modalTitle").textContent = `AAOIFI аудит: ${stock.symbol} (${stock.name})`;
+      document.getElementById("edDebt").value = stock.debt_ratio_pct;
+      document.getElementById("edDep").value = stock.interest_deposit_ratio_pct;
+      document.getElementById("edImpure").value = stock.impure_revenue_pct;
+      document.getElementById("edBiz").value = "";
+      document.getElementById("edNote").value = "";
+      document.getElementById("auditModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("auditModal").classList.add("hidden");
+    }
+
+    async function saveAudit() {
+      const body = {
+        debt_ratio_pct: parseFloat(document.getElementById("edDebt").value),
+        interest_deposit_ratio_pct: parseFloat(document.getElementById("edDep").value),
+        impure_revenue_pct: parseFloat(document.getElementById("edImpure").value),
+        business_override: document.getElementById("edBiz").value || null,
+        verdict_note: document.getElementById("edNote").value.trim() || null
+      };
+      const res = await api(`/api/v1/admin/stocks/${editingSymbol}/halal`, { method: "PUT", body: JSON.stringify(body) });
+      closeModal();
+      showToast(`${editingSymbol}: обновлён статус → ${res.stock.halal_status}`);
+      loadStocks();
+      loadStats();
+    }
+
+    async function loadLessons() {
+      const data = await api("/api/v1/admin/lessons?course_id=1");
+      document.getElementById("lessonsBody").innerHTML = data.lessons.map(l => `
+        <tr>
+          <td>#${l.id}</td>
+          <td>Модуль ${l.module_number}.${l.lesson_number}</td>
+          <td><strong>${l.title}</strong><div style="font-size:11px;color:var(--muted)">${l.title_uz}</div></td>
+          <td>${l.lesson_type} · ${l.duration_min} мин</td>
+          <td><span class="badge ${l.is_preview ? "HALAL" : "DOUBTFUL"}">${l.is_preview ? "Превью" : "Платный"}</span></td>
+          <td><button class="danger" onclick="deleteLesson(${l.id})">Удалить</button></td>
+        </tr>
+      `).join("");
+    }
+
+    async function createLesson() {
+      const title = document.getElementById("lesTitleRu").value.trim();
+      const titleUz = document.getElementById("lesTitleUz").value.trim() || title;
+      if (title.length < 3) { showToast("Введите название урока"); return; }
+      await api("/api/v1/admin/lessons", {
+        method: "POST",
+        body: JSON.stringify({
+          course_id: 1,
+          module_number: parseInt(document.getElementById("lesMod").value, 10) || 1,
+          lesson_number: parseInt(document.getElementById("lesNum").value, 10) || 1,
+          title,
+          title_uz: titleUz,
+          lesson_type: document.getElementById("lesType").value,
+          duration_min: parseInt(document.getElementById("lesDur").value, 10) || 10,
+          content_md: document.getElementById("lesMd").value,
+          is_preview: document.getElementById("lesPreview").checked
+        })
+      });
+      document.getElementById("lesTitleRu").value = "";
+      document.getElementById("lesTitleUz").value = "";
+      document.getElementById("lesMd").value = "";
+      showToast("Урок добавлен в LMS");
+      loadLessons();
+      loadStats();
+    }
+
+    async function deleteLesson(id) {
+      await api(`/api/v1/admin/lessons/${id}`, { method: "DELETE" });
+      showToast("Урок #" + id + " удалён");
+      loadLessons();
+      loadStats();
+    }
+
+    async function loadOrders() {
+      const data = await api("/api/v1/admin/orders");
+      if (!data.orders.length) {
+        document.getElementById("ordersBody").innerHTML = `<tr><td colspan="6" style="color:var(--muted)">Заказов пока нет</td></tr>`;
+        return;
+      }
+      document.getElementById("ordersBody").innerHTML = data.orders.map(o => `
+        <tr>
+          <td><strong>${o.order_uid}</strong></td>
+          <td>${o.provider}</td>
+          <td>${o.amount_uzs.toLocaleString("ru-RU")}</td>
+          <td><span class="badge ${o.status}">${o.status}</span></td>
+          <td style="color:var(--muted)">${o.provider_tx_id || "—"}</td>
+          <td style="color:var(--muted)">${(o.created_at || "").slice(0, 19).replace("T", " ")}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function refreshAll() {
+      await loadStats();
+      showToast("Данные обновлены");
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>

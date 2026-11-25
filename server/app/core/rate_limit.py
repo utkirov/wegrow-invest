@@ -58,5 +58,6 @@ class SecurityAndRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-Request-ID"] = req_id
         response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        if request.url.path.startswith("/api/") or settings.environment == "production":
+            response.headers["X-Frame-Options"] = "DENY"
         return response
