@@ -1,0 +1,20 @@
+# Local Gradle distribution & build caches
+.gradle-dist/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# IDE & OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
+
+# Python backend cache & runtime DB
+server/__pycache__/
+server/*.db
+server/*.sqlite3
+.venv/
+venv/

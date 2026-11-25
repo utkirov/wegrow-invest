@@ -1,0 +1,3 @@
+-keep class uz.wegrow.invest.** { *; }
+-dontwarn javax.naming.**
+-dontwarn java.lang.instrument.**
