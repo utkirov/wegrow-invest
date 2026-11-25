@@ -49,7 +49,10 @@ data class WeGrowUiState(
     val portfolio: uz.wegrow.invest.data.PortfolioData = uz.wegrow.invest.data.PortfolioData(),
     val watchlistSymbols: Set<String> = emptySet(),
     val alerts: List<uz.wegrow.invest.data.PriceAlertItem> = emptyList(),
-    val purification: uz.wegrow.invest.data.PurificationLedger = uz.wegrow.invest.data.PurificationLedger()
+    val purification: uz.wegrow.invest.data.PurificationLedger = uz.wegrow.invest.data.PurificationLedger(),
+    val courseLessons: List<uz.wegrow.invest.data.CourseLessonSummary> = emptyList(),
+    val activeLesson: uz.wegrow.invest.data.LessonDetail? = null,
+    val pendingOrder: uz.wegrow.invest.data.PaymentOrderInfo? = null
 ) {
     val activeStock: StockItem
         get() = stocks.find { it.symbol == activeStockSymbol } ?: stocks.firstOrNull()
@@ -125,6 +128,7 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
             }
             if (data.online) {
                 syncPortfolioModule()
+                syncCourseLms()
             }
         }
     }
@@ -449,6 +453,71 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
             val ledger = WeGrowApiClient.clearPurification(state.serverUrl, state.session, item, ::handleSessionRefreshed)
             if (ledger != null) {
                 _uiState.update { it.copy(purification = ledger) }
+            }
+        }
+    }
+
+    fun syncCourseLms(courseId: Int = 1) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val res = WeGrowApiClient.fetchCourseLessons(state.serverUrl, state.session, courseId, ::handleSessionRefreshed)
+            if (res != null) {
+                val (purchased, lessons) = res
+                _uiState.update { s ->
+                    s.copy(
+                        courseLessons = lessons,
+                        courses = s.courses.map { c ->
+                            if (c.id == courseId) c.copy(purchased = purchased) else c
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    fun openLesson(courseId: Int, lessonId: Int) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val detail = WeGrowApiClient.fetchLessonDetail(state.serverUrl, state.session, courseId, lessonId, ::handleSessionRefreshed)
+            if (detail != null) {
+                _uiState.update { it.copy(activeLesson = detail) }
+            }
+        }
+    }
+
+    fun closeLesson() {
+        _uiState.update { it.copy(activeLesson = null) }
+    }
+
+    fun completeLesson(courseId: Int, lessonId: Int, quizAnswers: Map<String, Int>?) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            WeGrowApiClient.submitLessonProgress(
+                state.serverUrl, state.session, courseId, lessonId, true, quizAnswers, ::handleSessionRefreshed
+            )
+            syncCourseLms(courseId)
+            _uiState.update { it.copy(activeLesson = null) }
+        }
+    }
+
+    fun startCourseOrder(courseId: Int, provider: String) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val order = WeGrowApiClient.createPaymentOrder(state.serverUrl, state.session, courseId, provider, ::handleSessionRefreshed)
+            if (order != null) {
+                _uiState.update { it.copy(pendingOrder = order) }
+            }
+        }
+    }
+
+    fun completeSandboxOrder(orderUid: String, courseId: Int = 1) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val paid = WeGrowApiClient.sandboxPayOrder(state.serverUrl, state.session, orderUid, ::handleSessionRefreshed)
+            if (paid != null) {
+                _uiState.update { it.copy(pendingOrder = paid) }
+                syncCourseLms(courseId)
+                syncWithServer()
             }
         }
     }

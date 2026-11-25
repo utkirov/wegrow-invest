@@ -233,3 +233,56 @@ class PurificationRecord(Base):
     cleared_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=_utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
+
+class CourseLesson(Base):
+    __tablename__ = "course_lessons"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    module_number: Mapped[int] = mapped_column(Integer, index=True)
+    lesson_number: Mapped[int] = mapped_column(Integer)
+    title: Mapped[str] = mapped_column(String(255))
+    title_uz: Mapped[str] = mapped_column(String(255))
+    lesson_type: Mapped[str] = mapped_column(String(16), default="article")  # video | article | quiz
+    duration_min: Mapped[int] = mapped_column(Integer, default=10)
+    video_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    content_md: Mapped[str] = mapped_column(Text, default="")
+    content_md_uz: Mapped[str] = mapped_column(Text, default="")
+    quiz_json: Mapped[str] = mapped_column(Text, default="[]")
+    is_preview: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class UserLessonProgress(Base):
+    __tablename__ = "user_lesson_progress"
+    __table_args__ = (UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson_progress"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("course_lessons.id", ondelete="CASCADE"), index=True)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    position_sec: Mapped[int] = mapped_column(Integer, default=0)
+    quiz_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class PaymentOrder(Base):
+    __tablename__ = "payment_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    order_uid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String(16))  # PAYME | CLICK
+    amount_uzs: Mapped[int] = mapped_column(Integer)
+    amount_tiyin: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="PENDING", index=True)  # PENDING | PAID | CANCELLED | REFUNDED
+    provider_tx_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True, index=True)
+    provider_state: Mapped[int] = mapped_column(Integer, default=0)
+    provider_create_time: Mapped[int] = mapped_column(Integer, default=0)
+    provider_perform_time: Mapped[int] = mapped_column(Integer, default=0)
+    provider_cancel_time: Mapped[int] = mapped_column(Integer, default=0)
+    cancel_reason: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
