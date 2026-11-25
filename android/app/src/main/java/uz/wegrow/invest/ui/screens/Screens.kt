@@ -1028,6 +1028,9 @@ fun TickerDetailScreen(
     strings: AppStrings,
     activeTimeframe: String = "1M",
     activeChartPoints: List<Float>? = null,
+    isWatchlisted: Boolean = false,
+    onToggleWatchlist: () -> Unit = {},
+    onQuickAlert: () -> Unit = {},
     onSelectTimeframe: (String) -> Unit = {},
     onRefreshStock: () -> Unit = {},
     onBack: () -> Unit,
@@ -1073,28 +1076,39 @@ fun TickerDetailScreen(
                 Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
             }
             Text(text = stock.symbol, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
+                        .bouncyClickable(haptic = true, onClick = onToggleWatchlist)
+                        .clip(CircleShape)
+                        .background(if (isWatchlisted) colors.brandSoft else colors.surface)
+                        .border(1.dp, if (isWatchlisted) colors.brandPrimary else colors.border, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = if (isWatchlisted) "★" else "☆", color = colors.brandPrimary, fontSize = 16.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .bouncyClickable(haptic = true, onClick = onQuickAlert)
+                        .clip(CircleShape)
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🔔", fontSize = 15.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
                         .bouncyClickable(haptic = true, onClick = onRefreshStock)
                         .clip(CircleShape)
                         .background(colors.surface)
                         .border(1.dp, colors.border, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "↻", color = colors.textPrimary, fontSize = 18.sp)
-                }
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .bouncyClickable(haptic = true) { onOpenHalalAnalysis(stock) }
-                        .clip(CircleShape)
-                        .background(colors.surface)
-                        .border(1.dp, colors.border, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "✦", color = colors.brandPrimary, fontSize = 18.sp)
+                    Text(text = "↻", color = colors.textPrimary, fontSize = 17.sp)
                 }
             }
         }
@@ -2777,7 +2791,8 @@ fun ProfileSettingsScreen(
     onOpenCalculator: () -> Unit,
     onReplayOnboarding: () -> Unit,
     onOpenAuth: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenPortfolio: () -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
     var urlInput by remember(serverUrl) { mutableStateOf(serverUrl) }
@@ -2942,6 +2957,12 @@ fun ProfileSettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        WeGrowButton(
+            text = if (strings.langCode == "uz") "Investitsiya portfeli va poklash" else "Инвестиционный портфель и очищение",
+            onClick = onOpenPortfolio,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(10.dp))
         WeGrowButton(
             text = strings.calculatorsTitle,
             onClick = onOpenCalculator,

@@ -119,4 +119,85 @@ class WeGrowModelsAndApiTest {
         val guest = UserProfile(firstName = "Гость", lastName = "WeGrow", isGuest = true)
         assertEquals("Гостевой доступ", guest.contactLabel)
     }
+
+    @Test
+    fun parsePortfolioAndPurificationJson_decodesPositionsWarningsAndLedger() {
+        val rawPortfolio = """
+            {
+              "summary": {
+                "total_value": 5420.5,
+                "total_invested": 4900.0,
+                "total_pnl_abs": 520.5,
+                "total_pnl_pct": 10.62,
+                "daily_pnl_abs": 42.1,
+                "realized_pnl_abs": 100.0,
+                "halal_compliance_pct": 85.4,
+                "positions_count": 2
+              },
+              "positions": [
+                {
+                  "symbol": "AAPL",
+                  "name": "Apple Inc.",
+                  "sector": "Технологии",
+                  "sector_uz": "Texnologiyalar",
+                  "halal_status": "HALAL",
+                  "quantity": 15.0,
+                  "avg_price": 210.0,
+                  "current_price": 228.45,
+                  "invested": 3150.0,
+                  "market_value": 3426.75,
+                  "pnl_abs": 276.75,
+                  "pnl_pct": 8.79,
+                  "daily_pnl": 34.65,
+                  "weight_pct": 63.2
+                }
+              ],
+              "non_halal_warnings": [
+                {
+                  "symbol": "JPM",
+                  "name": "JPMorgan Chase",
+                  "halal_status": "HARAM",
+                  "market_value": 1194.5,
+                  "reason": "Не соответствует 4 из 4 критериев AAOIFI"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val p = WeGrowApiClient.parsePortfolioJson(rawPortfolio)
+        assertNotNull(p)
+        assertEquals(5420.5, p!!.summary.totalValue, 0.01)
+        assertEquals(85.4, p.summary.halalCompliancePct, 0.01)
+        assertEquals(1, p.positions.size)
+        assertEquals(1, p.warnings.size)
+        assertEquals(HalalStatus.HARAM, p.warnings.first().halalStatus)
+
+        val rawPurification = """
+            {
+              "quarter_label": "Q4 2026",
+              "total_pending_usd": 1.16,
+              "total_cleared_usd": 0.25,
+              "items": [
+                {
+                  "symbol": "MSFT",
+                  "name": "Microsoft Corp.",
+                  "quarter_label": "Q4 2026",
+                  "shares": 100.0,
+                  "dividend_total": 83.0,
+                  "purification_due": 1.16,
+                  "cleared_amount": 0.0,
+                  "remaining_amount": 1.16,
+                  "status": "PENDING"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val ledger = WeGrowApiClient.parsePurificationJson(rawPurification)
+        assertNotNull(ledger)
+        assertEquals("Q4 2026", ledger!!.quarterLabel)
+        assertEquals(1.16, ledger.totalPendingUsd, 0.001)
+        assertEquals(1, ledger.items.size)
+        assertEquals("MSFT", ledger.items.first().symbol)
+    }
 }
