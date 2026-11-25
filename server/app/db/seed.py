@@ -148,6 +148,7 @@ def seed_courses(db: Session) -> None:
 
 def seed_all() -> None:
     from app.db import session as db_session
+    from app.services.lms_seed import seed_lessons
 
     init_db_schema()
     db = db_session.SessionLocal()
@@ -155,6 +156,8 @@ def seed_all() -> None:
         ensure_default_user(db)
         seed_stocks(db)
         seed_courses(db)
+        db.flush()
+        seed_lessons(db)
         db.commit()
     finally:
         db.close()

@@ -275,3 +275,55 @@ data class PurificationLedger(
     val items: List<PurificationItem> = emptyList()
 )
 
+@Immutable
+data class CourseLessonSummary(
+    val id: Int,
+    val courseId: Int,
+    val moduleNumber: Int,
+    val lessonNumber: Int,
+    val title: String,
+    val titleUz: String,
+    val lessonType: String,
+    val durationMin: Int,
+    val isPreview: Boolean,
+    val locked: Boolean,
+    val completed: Boolean,
+    val quizScore: Int? = null
+)
+
+@Immutable
+data class LessonQuizQuestion(
+    val id: String,
+    val question: String,
+    val questionUz: String,
+    val options: List<String>
+)
+
+@Immutable
+data class LessonDetail(
+    val id: Int,
+    val courseId: Int,
+    val title: String,
+    val titleUz: String,
+    val lessonType: String,
+    val durationMin: Int,
+    val videoUrl: String?,
+    val contentMd: String,
+    val contentMdUz: String,
+    val quiz: List<LessonQuizQuestion>,
+    val completed: Boolean,
+    val quizScore: Int? = null
+)
+
+@Immutable
+data class PaymentOrderInfo(
+    val orderUid: String,
+    val courseId: Int,
+    val provider: String,
+    val amountUzs: Int,
+    val status: String,
+    val checkoutUrl: String,
+    val sandboxEnabled: Boolean = true
+)
+
+

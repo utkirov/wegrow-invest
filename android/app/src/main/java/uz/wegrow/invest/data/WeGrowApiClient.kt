@@ -870,6 +870,177 @@ object WeGrowApiClient {
         )
     }
 
+    // ---- Sprint 3: LMS Lessons & Payme/Click Orders ----
+
+    suspend fun fetchCourseLessons(
+        baseUrl: String,
+        session: AuthSession,
+        courseId: Int,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Pair<Boolean, List<CourseLessonSummary>>? {
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/courses/$courseId", "GET", session, null, onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseCourseLessonsJson(raw)
+    }
+
+    suspend fun fetchLessonDetail(
+        baseUrl: String,
+        session: AuthSession,
+        courseId: Int,
+        lessonId: Int,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): LessonDetail? {
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/courses/$courseId/lessons/$lessonId", "GET", session, null, onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseLessonDetailJson(raw)
+    }
+
+    suspend fun submitLessonProgress(
+        baseUrl: String,
+        session: AuthSession,
+        courseId: Int,
+        lessonId: Int,
+        completed: Boolean,
+        quizAnswers: Map<String, Int>? = null,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Int? {
+        val payload = buildJsonObject {
+            put("completed", completed)
+            put("position_sec", 0)
+            if (quizAnswers != null) {
+                put("quiz_answers", buildJsonObject {
+                    quizAnswers.forEach { (k, v) -> put(k, v) }
+                })
+            }
+        }.toString()
+        val (code, raw) = executeWithRefresh(
+            baseUrl,
+            "/api/v1/courses/$courseId/lessons/$lessonId/progress",
+            "POST",
+            session,
+            payload,
+            onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return try {
+            val obj = json.parseToJsonElement(raw).jsonObject
+            (obj["quiz_score"] as? JsonPrimitive)?.intOrNull ?: 100
+        } catch (_: Exception) {
+            100
+        }
+    }
+
+    suspend fun createPaymentOrder(
+        baseUrl: String,
+        session: AuthSession,
+        courseId: Int,
+        provider: String,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PaymentOrderInfo? {
+        val payload = buildJsonObject {
+            put("course_id", courseId)
+            put("provider", provider.uppercase())
+        }.toString()
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/orders", "POST", session, payload, onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parsePaymentOrderJson(raw)
+    }
+
+    suspend fun sandboxPayOrder(
+        baseUrl: String,
+        session: AuthSession,
+        orderUid: String,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PaymentOrderInfo? {
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/orders/$orderUid/sandbox-pay", "POST", session, "{}", onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parsePaymentOrderJson(raw)
+    }
+
+    internal fun parseCourseLessonsJson(raw: String): Pair<Boolean, List<CourseLessonSummary>>? {
+        return try {
+            val root = json.parseToJsonElement(raw).jsonObject
+            val purchased = root.boolVal("purchased", false)
+            val list = root["lessons"]?.jsonArray?.map { elem ->
+                val l = elem.jsonObject
+                CourseLessonSummary(
+                    id = l.intVal("id", 0),
+                    courseId = l.intVal("course_id", 1),
+                    moduleNumber = l.intVal("module_number", 1),
+                    lessonNumber = l.intVal("lesson_number", 1),
+                    title = l.str("title", ""),
+                    titleUz = l.str("title_uz", l.str("title", "")),
+                    lessonType = l.str("lesson_type", "article"),
+                    durationMin = l.intVal("duration_min", 10),
+                    isPreview = l.boolVal("is_preview", false),
+                    locked = l.boolVal("locked", true),
+                    completed = l.boolVal("completed", false),
+                    quizScore = (l["quiz_score"] as? JsonPrimitive)?.intOrNull
+                )
+            } ?: emptyList()
+            purchased to list
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parseLessonDetailJson(raw: String): LessonDetail? {
+        return try {
+            val l = json.parseToJsonElement(raw).jsonObject
+            val quiz = l["quiz"]?.jsonArray?.map { elem ->
+                val q = elem.jsonObject
+                LessonQuizQuestion(
+                    id = q.str("id", ""),
+                    question = q.str("question", ""),
+                    questionUz = q.str("question_uz", q.str("question", "")),
+                    options = q["options"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+                )
+            } ?: emptyList()
+            LessonDetail(
+                id = l.intVal("id", 0),
+                courseId = l.intVal("course_id", 1),
+                title = l.str("title", ""),
+                titleUz = l.str("title_uz", l.str("title", "")),
+                lessonType = l.str("lesson_type", "article"),
+                durationMin = l.intVal("duration_min", 10),
+                videoUrl = l.nullableStr("video_url"),
+                contentMd = l.str("content_md", ""),
+                contentMdUz = l.str("content_md_uz", l.str("content_md", "")),
+                quiz = quiz,
+                completed = l.boolVal("completed", false),
+                quizScore = (l["quiz_score"] as? JsonPrimitive)?.intOrNull
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parsePaymentOrderJson(raw: String): PaymentOrderInfo? {
+        return try {
+            val root = json.parseToJsonElement(raw).jsonObject
+            val o = root["order"]?.jsonObject ?: root
+            PaymentOrderInfo(
+                orderUid = o.str("order_uid", ""),
+                courseId = o.intVal("course_id", 1),
+                provider = o.str("provider", "PAYME"),
+                amountUzs = o.intVal("amount_uzs", 0),
+                status = o.str("status", "PENDING"),
+                checkoutUrl = o.str("checkout_url", ""),
+                sandboxEnabled = o.boolVal("sandbox_enabled", true)
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun extractErrorDetail(raw: String, code: Int): String {
         return try {
             val obj = json.parseToJsonElement(raw).jsonObject

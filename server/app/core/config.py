@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     market_cache_ttl_seconds: int = 900
     market_request_timeout_seconds: float = 5.0
 
+    # Payment gateways (Uzbekistan: Payme Merchant API & Click SHOP API)
+    payment_sandbox: bool = True
+    payme_merchant_id: str = "dev_payme_merchant_id"
+    payme_merchant_key: str = "dev_payme_secret_key"
+    payme_checkout_url: str = "https://checkout.paycom.uz"
+
+    click_service_id: int = 10001
+    click_merchant_id: int = 20001
+    click_secret_key: str = "dev_click_secret_key"
+    click_checkout_url: str = "https://my.click.uz/services/pay"
+
     allowed_origins: str = "*"
 
     @property

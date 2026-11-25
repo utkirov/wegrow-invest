@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.db.seed import seed_all
-from app.routers import auth, core_api, market, portfolio
+from app.routers import auth, core_api, lms, market, payments, portfolio
 
 
 @asynccontextmanager
@@ -37,6 +37,8 @@ def create_app() -> FastAPI:
     application.include_router(auth.router)
     application.include_router(market.router)
     application.include_router(portfolio.router)
+    application.include_router(lms.router)
+    application.include_router(payments.router)
     application.include_router(core_api.router)
     return application
 

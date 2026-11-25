@@ -200,4 +200,55 @@ class WeGrowModelsAndApiTest {
         assertEquals(1, ledger.items.size)
         assertEquals("MSFT", ledger.items.first().symbol)
     }
+
+    @Test
+    fun parseLmsLessonsAndPaymentOrderJson_decodesQuizAndOrder() {
+        val rawCourse = """
+            {
+              "purchased": true,
+              "lessons": [
+                {
+                  "id": 1,
+                  "course_id": 1,
+                  "module_number": 1,
+                  "lesson_number": 1,
+                  "title": "Как устроен рынок США",
+                  "title_uz": "AQSh bozori",
+                  "lesson_type": "video",
+                  "duration_min": 12,
+                  "is_preview": true,
+                  "locked": false,
+                  "completed": true,
+                  "quiz_score": 100
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val lms = WeGrowApiClient.parseCourseLessonsJson(rawCourse)
+        assertNotNull(lms)
+        assertTrue(lms!!.first)
+        assertEquals(1, lms.second.size)
+        assertEquals(100, lms.second.first().quizScore)
+
+        val rawOrder = """
+            {
+              "order": {
+                "order_uid": "WG-ABC123456789",
+                "course_id": 1,
+                "provider": "PAYME",
+                "amount_uzs": 1290000,
+                "status": "PENDING",
+                "checkout_url": "https://checkout.paycom.uz/demo",
+                "sandbox_enabled": true
+              }
+            }
+        """.trimIndent()
+
+        val order = WeGrowApiClient.parsePaymentOrderJson(rawOrder)
+        assertNotNull(order)
+        assertEquals("WG-ABC123456789", order!!.orderUid)
+        assertEquals("PAYME", order.provider)
+        assertEquals(1290000, order.amountUzs)
+    }
 }

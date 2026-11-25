@@ -32,6 +32,7 @@ import uz.wegrow.invest.ui.WeGrowViewModel
 import uz.wegrow.invest.ui.components.WeGrowFloatingNavBar
 import uz.wegrow.invest.ui.screens.*
 import uz.wegrow.invest.ui.screens.auth.AuthScreen
+import uz.wegrow.invest.ui.screens.courses.CourseLmsScreen
 import uz.wegrow.invest.ui.screens.portfolio.PortfolioScreen
 import uz.wegrow.invest.ui.theme.WeGrowInvestTheme
 import uz.wegrow.invest.ui.theme.WeGrowTheme
@@ -326,13 +327,28 @@ class MainActivity : ComponentActivity() {
 
                                             2 -> {
                                                 val firstCourse = uiState.courses.first()
-                                                CourseScreen(
-                                                    course = firstCourse,
-                                                    strings = strings,
-                                                    onPurchase = { provider ->
-                                                        vm.purchaseCourse(firstCourse.id, provider)
-                                                    }
-                                                )
+                                                if (uiState.courseLessons.isNotEmpty() || uiState.activeLesson != null) {
+                                                    CourseLmsScreen(
+                                                        course = firstCourse,
+                                                        lessons = uiState.courseLessons,
+                                                        activeLesson = uiState.activeLesson,
+                                                        pendingOrder = uiState.pendingOrder,
+                                                        strings = strings,
+                                                        onOpenLesson = { les -> vm.openLesson(firstCourse.id, les.id) },
+                                                        onCloseLesson = { vm.closeLesson() },
+                                                        onCompleteLesson = { lid, ans -> vm.completeLesson(firstCourse.id, lid, ans) },
+                                                        onStartOrder = { prov -> vm.startCourseOrder(firstCourse.id, prov) },
+                                                        onSandboxPay = { uid -> vm.completeSandboxOrder(uid, firstCourse.id) }
+                                                    )
+                                                } else {
+                                                    CourseScreen(
+                                                        course = firstCourse,
+                                                        strings = strings,
+                                                        onPurchase = { provider ->
+                                                            vm.purchaseCourse(firstCourse.id, provider)
+                                                        }
+                                                    )
+                                                }
                                             }
 
                                             else -> {
