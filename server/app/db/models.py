@@ -177,3 +177,59 @@ class UserCoursePurchase(Base):
     purchased_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     user: Mapped["User"] = relationship("User", back_populates="course_purchases")
+
+
+class PortfolioTransaction(Base):
+    __tablename__ = "portfolio_transactions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    side: Mapped[str] = mapped_column(String(8), default="BUY")  # BUY | SELL
+    quantity: Mapped[float] = mapped_column(Float)
+    price: Mapped[float] = mapped_column(Float)
+    fee: Mapped[float] = mapped_column(Float, default=0.0)
+    note: Mapped[str] = mapped_column(String(255), default="")
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class WatchlistItem(Base):
+    __tablename__ = "watchlist_items"
+    __table_args__ = (UniqueConstraint("user_id", "symbol", name="uq_user_watchlist_symbol"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class PriceAlert(Base):
+    __tablename__ = "price_alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    condition: Mapped[str] = mapped_column(String(16), default="ABOVE")  # ABOVE | BELOW | HALAL_CHANGE
+    target_price: Mapped[float] = mapped_column(Float, default=0.0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    triggered: Mapped[bool] = mapped_column(Boolean, default=False)
+    triggered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    message: Mapped[str] = mapped_column(String(255), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class PurificationRecord(Base):
+    __tablename__ = "purification_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    quarter_label: Mapped[str] = mapped_column(String(32), default="Q4 2026")
+    shares: Mapped[float] = mapped_column(Float, default=0.0)
+    dividend_total: Mapped[float] = mapped_column(Float, default=0.0)
+    impure_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    purification_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[str] = mapped_column(String(16), default="CLEARED")  # PENDING | CLEARED
+    cleared_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+

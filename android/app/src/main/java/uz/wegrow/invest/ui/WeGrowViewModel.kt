@@ -45,7 +45,11 @@ data class WeGrowUiState(
     val activeTimeframe: String = "1M",
     val isAuthLoading: Boolean = false,
     val authError: String? = null,
-    val pendingOtp: OtpRequestResult? = null
+    val pendingOtp: OtpRequestResult? = null,
+    val portfolio: uz.wegrow.invest.data.PortfolioData = uz.wegrow.invest.data.PortfolioData(),
+    val watchlistSymbols: Set<String> = emptySet(),
+    val alerts: List<uz.wegrow.invest.data.PriceAlertItem> = emptyList(),
+    val purification: uz.wegrow.invest.data.PurificationLedger = uz.wegrow.invest.data.PurificationLedger()
 ) {
     val activeStock: StockItem
         get() = stocks.find { it.symbol == activeStockSymbol } ?: stocks.firstOrNull()
@@ -118,6 +122,9 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
                         state.profile
                     }
                 )
+            }
+            if (data.online) {
+                syncPortfolioModule()
             }
         }
     }
@@ -371,6 +378,78 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
                 provider = provider,
                 onSessionRefreshed = ::handleSessionRefreshed
             )
+        }
+    }
+
+    fun syncPortfolioModule() {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val portfolio = WeGrowApiClient.fetchPortfolio(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val wl = WeGrowApiClient.fetchWatchlistSymbols(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val alerts = WeGrowApiClient.fetchAlerts(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val ledger = WeGrowApiClient.fetchPurification(state.serverUrl, state.session, ::handleSessionRefreshed)
+            _uiState.update { s ->
+                s.copy(
+                    portfolio = portfolio ?: s.portfolio,
+                    watchlistSymbols = wl ?: s.watchlistSymbols,
+                    alerts = alerts ?: s.alerts,
+                    purification = ledger ?: s.purification
+                )
+            }
+        }
+    }
+
+    fun addPortfolioTransaction(symbol: String, side: String, quantity: Double, price: Double) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val updated = WeGrowApiClient.addPortfolioTransaction(
+                state.serverUrl, state.session, symbol, side, quantity, price, ::handleSessionRefreshed
+            )
+            if (updated != null) {
+                val ledger = WeGrowApiClient.fetchPurification(state.serverUrl, state.session, ::handleSessionRefreshed)
+                _uiState.update { s ->
+                    s.copy(portfolio = updated, purification = ledger ?: s.purification)
+                }
+            }
+        }
+    }
+
+    fun toggleWatchlist(symbol: String) {
+        val sym = symbol.uppercase()
+        val currentlyIn = sym in _uiState.value.watchlistSymbols
+        val nextSet = if (currentlyIn) _uiState.value.watchlistSymbols - sym else _uiState.value.watchlistSymbols + sym
+        _uiState.update { it.copy(watchlistSymbols = nextSet) }
+        val state = _uiState.value
+        viewModelScope.launch {
+            WeGrowApiClient.setWatchlistSymbol(state.serverUrl, state.session, sym, add = !currentlyIn, ::handleSessionRefreshed)
+        }
+    }
+
+    fun createPriceAlert(symbol: String, condition: String, targetPrice: Double) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            if (WeGrowApiClient.createAlert(state.serverUrl, state.session, symbol, condition, targetPrice, ::handleSessionRefreshed)) {
+                val alerts = WeGrowApiClient.fetchAlerts(state.serverUrl, state.session, ::handleSessionRefreshed)
+                if (alerts != null) _uiState.update { it.copy(alerts = alerts) }
+            }
+        }
+    }
+
+    fun deletePriceAlert(alertId: Int) {
+        _uiState.update { s -> s.copy(alerts = s.alerts.filterNot { it.id == alertId }) }
+        val state = _uiState.value
+        viewModelScope.launch {
+            WeGrowApiClient.deleteAlert(state.serverUrl, state.session, alertId, ::handleSessionRefreshed)
+        }
+    }
+
+    fun clearPurification(item: uz.wegrow.invest.data.PurificationItem) {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val ledger = WeGrowApiClient.clearPurification(state.serverUrl, state.session, item, ::handleSessionRefreshed)
+            if (ledger != null) {
+                _uiState.update { it.copy(purification = ledger) }
+            }
         }
     }
 }

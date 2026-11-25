@@ -614,6 +614,262 @@ object WeGrowApiClient {
         )
     }
 
+    // ---- Sprint 2: Portfolio, Watchlist, Alerts, Purification ----
+
+    suspend fun fetchPortfolio(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PortfolioData? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/portfolio", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parsePortfolioJson(raw)
+    }
+
+    suspend fun addPortfolioTransaction(
+        baseUrl: String,
+        session: AuthSession,
+        symbol: String,
+        side: String,
+        quantity: Double,
+        price: Double,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PortfolioData? {
+        val payload = buildJsonObject {
+            put("symbol", symbol.trim().uppercase())
+            put("side", side.uppercase())
+            put("quantity", quantity)
+            put("price", price)
+        }.toString()
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/portfolio/transactions", "POST", session, payload, onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return try {
+            val pObj = json.parseToJsonElement(raw).jsonObject["portfolio"]?.jsonObject ?: return null
+            parsePortfolioObject(pObj)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun fetchWatchlistSymbols(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Set<String>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/watchlist", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["symbols"]?.jsonArray ?: return emptySet()
+            arr.mapNotNull { it.jsonPrimitive.content.uppercase().ifBlank { null } }.toSet()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun setWatchlistSymbol(
+        baseUrl: String,
+        session: AuthSession,
+        symbol: String,
+        add: Boolean,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Boolean {
+        val method = if (add) "POST" else "DELETE"
+        val (code, _) = executeWithRefresh(
+            baseUrl, "/api/v1/watchlist/${symbol.uppercase()}", method, session, if (add) "{}" else null, onSessionRefreshed
+        )
+        return code in 200..299
+    }
+
+    suspend fun fetchAlerts(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): List<PriceAlertItem>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/alerts", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseAlertsJson(raw)
+    }
+
+    suspend fun createAlert(
+        baseUrl: String,
+        session: AuthSession,
+        symbol: String,
+        condition: String,
+        targetPrice: Double,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Boolean {
+        val payload = buildJsonObject {
+            put("symbol", symbol.uppercase())
+            put("condition", condition)
+            put("target_price", targetPrice)
+        }.toString()
+        val (code, _) = executeWithRefresh(baseUrl, "/api/v1/alerts", "POST", session, payload, onSessionRefreshed)
+        return code in 200..299
+    }
+
+    suspend fun deleteAlert(
+        baseUrl: String,
+        session: AuthSession,
+        alertId: Int,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Boolean {
+        val (code, _) = executeWithRefresh(baseUrl, "/api/v1/alerts/$alertId", "DELETE", session, null, onSessionRefreshed)
+        return code in 200..299
+    }
+
+    suspend fun fetchPurification(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PurificationLedger? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/purification", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parsePurificationJson(raw)
+    }
+
+    suspend fun clearPurification(
+        baseUrl: String,
+        session: AuthSession,
+        item: PurificationItem,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): PurificationLedger? {
+        val payload = buildJsonObject {
+            put("symbol", item.symbol)
+            put("amount", item.remainingAmount)
+            put("quarter_label", item.quarterLabel)
+            put("shares", item.shares)
+            put("dividend_total", item.dividendTotal)
+        }.toString()
+        val (code, raw) = executeWithRefresh(
+            baseUrl, "/api/v1/purification/clear", "POST", session, payload, onSessionRefreshed
+        )
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return try {
+            val lObj = json.parseToJsonElement(raw).jsonObject["ledger"]?.jsonObject ?: return null
+            parsePurificationObject(lObj)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parsePortfolioJson(raw: String): PortfolioData? {
+        return try {
+            parsePortfolioObject(json.parseToJsonElement(raw).jsonObject)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun parsePortfolioObject(root: JsonObject): PortfolioData {
+        val s = root["summary"]?.jsonObject
+        val summary = PortfolioSummary(
+            totalValue = s?.doubleVal("total_value", 0.0) ?: 0.0,
+            totalInvested = s?.doubleVal("total_invested", 0.0) ?: 0.0,
+            totalPnlAbs = s?.doubleVal("total_pnl_abs", 0.0) ?: 0.0,
+            totalPnlPct = s?.doubleVal("total_pnl_pct", 0.0) ?: 0.0,
+            dailyPnlAbs = s?.doubleVal("daily_pnl_abs", 0.0) ?: 0.0,
+            realizedPnlAbs = s?.doubleVal("realized_pnl_abs", 0.0) ?: 0.0,
+            halalCompliancePct = s?.doubleVal("halal_compliance_pct", 100.0) ?: 100.0,
+            positionsCount = s?.intVal("positions_count", 0) ?: 0
+        )
+        val positions = root["positions"]?.jsonArray?.map { elem ->
+            val p = elem.jsonObject
+            val st = when (p.str("halal_status", "HALAL").uppercase()) {
+                "DOUBTFUL" -> HalalStatus.DOUBTFUL
+                "HARAM" -> HalalStatus.HARAM
+                else -> HalalStatus.HALAL
+            }
+            PortfolioPosition(
+                symbol = p.str("symbol", ""),
+                name = p.str("name", ""),
+                sector = p.str("sector", ""),
+                sectorUz = p.str("sector_uz", p.str("sector", "")),
+                halalStatus = st,
+                quantity = p.doubleVal("quantity", 0.0),
+                avgPrice = p.doubleVal("avg_price", 0.0),
+                currentPrice = p.doubleVal("current_price", 0.0),
+                invested = p.doubleVal("invested", 0.0),
+                marketValue = p.doubleVal("market_value", 0.0),
+                pnlAbs = p.doubleVal("pnl_abs", 0.0),
+                pnlPct = p.doubleVal("pnl_pct", 0.0),
+                dailyPnl = p.doubleVal("daily_pnl", 0.0),
+                weightPct = p.doubleVal("weight_pct", 0.0)
+            )
+        } ?: emptyList()
+
+        val warnings = root["non_halal_warnings"]?.jsonArray?.map { elem ->
+            val w = elem.jsonObject
+            val st = when (w.str("halal_status", "HARAM").uppercase()) {
+                "DOUBTFUL" -> HalalStatus.DOUBTFUL
+                else -> HalalStatus.HARAM
+            }
+            PortfolioWarning(
+                symbol = w.str("symbol", ""),
+                name = w.str("name", ""),
+                halalStatus = st,
+                marketValue = w.doubleVal("market_value", 0.0),
+                reason = w.str("reason", "")
+            )
+        } ?: emptyList()
+
+        return PortfolioData(summary = summary, positions = positions, warnings = warnings)
+    }
+
+    internal fun parseAlertsJson(raw: String): List<PriceAlertItem> {
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["alerts"]?.jsonArray ?: return emptyList()
+            arr.map { elem ->
+                val a = elem.jsonObject
+                PriceAlertItem(
+                    id = a.intVal("id", 0),
+                    symbol = a.str("symbol", ""),
+                    condition = a.str("condition", "ABOVE"),
+                    targetPrice = a.doubleVal("target_price", 0.0),
+                    active = a.boolVal("active", true),
+                    triggered = a.boolVal("triggered", false),
+                    message = a.str("message", ""),
+                    currentPrice = (a["current_price"] as? JsonPrimitive)?.doubleOrNull
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    internal fun parsePurificationJson(raw: String): PurificationLedger? {
+        return try {
+            parsePurificationObject(json.parseToJsonElement(raw).jsonObject)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun parsePurificationObject(obj: JsonObject): PurificationLedger {
+        val items = obj["items"]?.jsonArray?.map { elem ->
+            val it = elem.jsonObject
+            PurificationItem(
+                symbol = it.str("symbol", ""),
+                name = it.str("name", ""),
+                quarterLabel = it.str("quarter_label", obj.str("quarter_label", "Q4 2026")),
+                shares = it.doubleVal("shares", 0.0),
+                dividendTotal = it.doubleVal("dividend_total", 0.0),
+                purificationDue = it.doubleVal("purification_due", 0.0),
+                clearedAmount = it.doubleVal("cleared_amount", 0.0),
+                remainingAmount = it.doubleVal("remaining_amount", 0.0),
+                status = it.str("status", "PENDING")
+            )
+        } ?: emptyList()
+
+        return PurificationLedger(
+            quarterLabel = obj.str("quarter_label", "Q4 2026"),
+            totalPendingUsd = obj.doubleVal("total_pending_usd", 0.0),
+            totalClearedUsd = obj.doubleVal("total_cleared_usd", 0.0),
+            items = items
+        )
+    }
+
     private fun extractErrorDetail(raw: String, code: Int): String {
         return try {
             val obj = json.parseToJsonElement(raw).jsonObject

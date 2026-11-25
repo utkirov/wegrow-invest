@@ -195,3 +195,83 @@ data class NewsItem(
     val ticker: String,
     val tag: String
 )
+
+@Immutable
+data class PortfolioSummary(
+    val totalValue: Double = 0.0,
+    val totalInvested: Double = 0.0,
+    val totalPnlAbs: Double = 0.0,
+    val totalPnlPct: Double = 0.0,
+    val dailyPnlAbs: Double = 0.0,
+    val realizedPnlAbs: Double = 0.0,
+    val halalCompliancePct: Double = 100.0,
+    val positionsCount: Int = 0
+)
+
+@Immutable
+data class PortfolioPosition(
+    val symbol: String,
+    val name: String,
+    val sector: String,
+    val sectorUz: String,
+    val halalStatus: HalalStatus,
+    val quantity: Double,
+    val avgPrice: Double,
+    val currentPrice: Double,
+    val invested: Double,
+    val marketValue: Double,
+    val pnlAbs: Double,
+    val pnlPct: Double,
+    val dailyPnl: Double,
+    val weightPct: Double = 0.0
+)
+
+@Immutable
+data class PortfolioWarning(
+    val symbol: String,
+    val name: String,
+    val halalStatus: HalalStatus,
+    val marketValue: Double,
+    val reason: String
+)
+
+@Immutable
+data class PortfolioData(
+    val summary: PortfolioSummary = PortfolioSummary(),
+    val positions: List<PortfolioPosition> = emptyList(),
+    val warnings: List<PortfolioWarning> = emptyList()
+)
+
+@Immutable
+data class PriceAlertItem(
+    val id: Int,
+    val symbol: String,
+    val condition: String,
+    val targetPrice: Double,
+    val active: Boolean,
+    val triggered: Boolean,
+    val message: String = "",
+    val currentPrice: Double? = null
+)
+
+@Immutable
+data class PurificationItem(
+    val symbol: String,
+    val name: String,
+    val quarterLabel: String,
+    val shares: Double,
+    val dividendTotal: Double,
+    val purificationDue: Double,
+    val clearedAmount: Double,
+    val remainingAmount: Double,
+    val status: String
+)
+
+@Immutable
+data class PurificationLedger(
+    val quarterLabel: String = "Q4 2026",
+    val totalPendingUsd: Double = 0.0,
+    val totalClearedUsd: Double = 0.0,
+    val items: List<PurificationItem> = emptyList()
+)
+

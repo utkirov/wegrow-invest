@@ -32,6 +32,7 @@ import uz.wegrow.invest.ui.WeGrowViewModel
 import uz.wegrow.invest.ui.components.WeGrowFloatingNavBar
 import uz.wegrow.invest.ui.screens.*
 import uz.wegrow.invest.ui.screens.auth.AuthScreen
+import uz.wegrow.invest.ui.screens.portfolio.PortfolioScreen
 import uz.wegrow.invest.ui.theme.WeGrowInvestTheme
 import uz.wegrow.invest.ui.theme.WeGrowTheme
 
@@ -43,7 +44,8 @@ enum class AppRoute {
     MAIN_TABS,
     TICKER_DETAIL,
     HALAL_ANALYSIS,
-    CALCULATOR
+    CALCULATOR,
+    PORTFOLIO
 }
 
 class MainActivity : ComponentActivity() {
@@ -199,6 +201,11 @@ class MainActivity : ComponentActivity() {
                                     strings = strings,
                                     activeTimeframe = uiState.activeTimeframe,
                                     activeChartPoints = uiState.activeChart?.takeIf { it.symbol == activeStock.symbol }?.points,
+                                    isWatchlisted = activeStock.symbol in uiState.watchlistSymbols,
+                                    onToggleWatchlist = { vm.toggleWatchlist(activeStock.symbol) },
+                                    onQuickAlert = {
+                                        vm.createPriceAlert(activeStock.symbol, "ABOVE", activeStock.price * 1.05)
+                                    },
                                     onSelectTimeframe = { tf -> vm.loadStockChart(activeStock.symbol, tf) },
                                     onRefreshStock = { vm.refreshActiveStock() },
                                     onBack = { currentRoute = AppRoute.MAIN_TABS },
@@ -206,6 +213,28 @@ class MainActivity : ComponentActivity() {
                                         vm.selectStock(st)
                                         currentRoute = AppRoute.HALAL_ANALYSIS
                                     }
+                                )
+                            }
+
+                            AppRoute.PORTFOLIO -> {
+                                PortfolioScreen(
+                                    portfolio = uiState.portfolio,
+                                    watchlistSymbols = uiState.watchlistSymbols,
+                                    allStocks = uiState.stocks,
+                                    alerts = uiState.alerts,
+                                    purification = uiState.purification,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onOpenStock = { st ->
+                                        vm.selectStock(st)
+                                        currentRoute = AppRoute.TICKER_DETAIL
+                                    },
+                                    onAddTransaction = { sym, side, qty, price ->
+                                        vm.addPortfolioTransaction(sym, side, qty, price)
+                                    },
+                                    onToggleWatchlist = { vm.toggleWatchlist(it) },
+                                    onClearPurification = { vm.clearPurification(it) },
+                                    onDeleteAlert = { vm.deletePriceAlert(it) }
                                 )
                             }
 
@@ -325,7 +354,11 @@ class MainActivity : ComponentActivity() {
                                                         vm.clearAuthStep()
                                                         currentRoute = AppRoute.AUTH
                                                     },
-                                                    onLogout = { vm.logout() }
+                                                    onLogout = { vm.logout() },
+                                                    onOpenPortfolio = {
+                                                        vm.syncPortfolioModule()
+                                                        currentRoute = AppRoute.PORTFOLIO
+                                                    }
                                                 )
                                             }
                                         }
