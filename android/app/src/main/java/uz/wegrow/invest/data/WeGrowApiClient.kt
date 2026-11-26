@@ -415,16 +415,7 @@ object WeGrowApiClient {
             val goals = root["goals"]?.jsonArray?.map { parseGoalObject(it.jsonObject) } ?: emptyList()
             val courses = root["courses"]?.jsonArray?.map { parseCourseObject(it.jsonObject) } ?: emptyList()
             val news = root["news"]?.jsonArray?.map { elem ->
-                val o = elem.jsonObject
-                NewsItem(
-                    id = o.intVal("id", 0),
-                    title = o.str("title", ""),
-                    titleUz = o.str("title_uz", o.str("title", "")),
-                    source = o.str("source", ""),
-                    sourceUz = o.str("source_uz", o.str("source", "")),
-                    ticker = o.str("ticker", "AAPL"),
-                    tag = o.str("tag", "")
-                )
+                parseNewsObject(elem.jsonObject)
             } ?: emptyList()
 
             val mo = root["market_overview"]?.jsonObject
@@ -1027,15 +1018,193 @@ object WeGrowApiClient {
         return try {
             val root = json.parseToJsonElement(raw).jsonObject
             val o = root["order"]?.jsonObject ?: root
-            PaymentOrderInfo(
-                orderUid = o.str("order_uid", ""),
-                courseId = o.intVal("course_id", 1),
-                provider = o.str("provider", "PAYME"),
-                amountUzs = o.intVal("amount_uzs", 0),
-                status = o.str("status", "PENDING"),
-                checkoutUrl = o.str("checkout_url", ""),
-                sandboxEnabled = o.boolVal("sandbox_enabled", true)
-            )
+            parsePaymentOrderObject(o)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun parsePaymentOrderObject(o: JsonObject): PaymentOrderInfo {
+        return PaymentOrderInfo(
+            orderUid = o.str("order_uid", ""),
+            courseId = o.intVal("course_id", 1),
+            provider = o.str("provider", "PAYME"),
+            amountUzs = o.intVal("amount_uzs", 0),
+            status = o.str("status", "PENDING"),
+            checkoutUrl = o.str("checkout_url", ""),
+            sandboxEnabled = o.boolVal("sandbox_enabled", true),
+            courseTitle = o.str("course_title", "Основы инвестирования в акции США"),
+            courseTitleUz = o.str("course_title_uz", "AQSh aksiyalariga investitsiya asoslari"),
+            createdAt = o.nullableStr("created_at"),
+            paidAt = o.nullableStr("paid_at")
+        )
+    }
+
+    internal fun parseNewsObject(o: JsonObject): NewsItem {
+        return NewsItem(
+            id = o.intVal("id", 0),
+            title = o.str("title", ""),
+            titleUz = o.str("title_uz", o.str("title", "")),
+            source = o.str("source", ""),
+            sourceUz = o.str("source_uz", o.str("source", "")),
+            ticker = o.str("ticker", "AAPL"),
+            tag = o.str("tag", ""),
+            summary = o.str("summary", ""),
+            summaryUz = o.str("summary_uz", o.str("summary", "")),
+            body = o.str("body", ""),
+            bodyUz = o.str("body_uz", o.str("body", "")),
+            readMin = o.intVal("read_min", 3),
+            publishedAt = o.str("published_at", "26.11.2026")
+        )
+    }
+
+    // ---- v4.1: Orders History, Stories, Brokers, Streams, Goal Deletion ----
+
+    suspend fun deleteGoal(
+        baseUrl: String,
+        session: AuthSession,
+        goalId: Int,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): Boolean {
+        val path = if (session.isAuthenticated) "/api/v1/goals/$goalId" else "/api/goals/$goalId"
+        val (code, _) = executeWithRefresh(baseUrl, path, "DELETE", session, null, onSessionRefreshed)
+        return code in 200..299
+    }
+
+    suspend fun fetchUserOrders(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): List<PaymentOrderInfo>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/orders", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseOrdersListJson(raw)
+    }
+
+    suspend fun fetchStories(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): List<StoryDeck>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/stories", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseStoriesJson(raw)
+    }
+
+    suspend fun fetchBrokers(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): List<BrokerInfo>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/brokers", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseBrokersJson(raw)
+    }
+
+    suspend fun fetchStreams(
+        baseUrl: String,
+        session: AuthSession,
+        onSessionRefreshed: ((AuthSession) -> Unit)? = null
+    ): List<StreamSession>? {
+        val (code, raw) = executeWithRefresh(baseUrl, "/api/v1/streams", "GET", session, null, onSessionRefreshed)
+        if (code !in 200..299 || raw.isNullOrBlank()) return null
+        return parseStreamsJson(raw)
+    }
+
+    internal fun parseOrdersListJson(raw: String): List<PaymentOrderInfo>? {
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["orders"]?.jsonArray ?: return emptyList()
+            arr.map { parsePaymentOrderObject(it.jsonObject) }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parseStoriesJson(raw: String): List<StoryDeck>? {
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["stories"]?.jsonArray ?: return emptyList()
+            arr.map { elem ->
+                val d = elem.jsonObject
+                val slides = d["slides"]?.jsonArray?.map { sElem ->
+                    val s = sElem.jsonObject
+                    StorySlide(
+                        eyebrow = s.str("eyebrow", ""),
+                        eyebrowUz = s.str("eyebrow_uz", s.str("eyebrow", "")),
+                        title = s.str("title", ""),
+                        titleUz = s.str("title_uz", s.str("title", "")),
+                        body = s.str("body", ""),
+                        bodyUz = s.str("body_uz", s.str("body", "")),
+                        ctaLabel = s.str("cta_label", ""),
+                        ctaLabelUz = s.str("cta_label_uz", s.str("cta_label", "")),
+                        actionRoute = s.str("action_route", "MARKET")
+                    )
+                } ?: emptyList()
+                StoryDeck(
+                    id = d.str("id", ""),
+                    label = d.str("label", ""),
+                    labelUz = d.str("label_uz", d.str("label", "")),
+                    badgeSymbol = d.str("badge_symbol", "✦"),
+                    slides = slides
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parseBrokersJson(raw: String): List<BrokerInfo>? {
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["brokers"]?.jsonArray ?: return emptyList()
+            arr.map { elem ->
+                val b = elem.jsonObject
+                BrokerInfo(
+                    id = b.str("id", ""),
+                    name = b.str("name", ""),
+                    badge = b.str("badge", ""),
+                    badgeUz = b.str("badge_uz", b.str("badge", "")),
+                    jurisdiction = b.str("jurisdiction", ""),
+                    minDeposit = b.str("min_deposit", "$0"),
+                    commission = b.str("commission", ""),
+                    usStocks = b.boolVal("us_stocks", true),
+                    halalCashAccount = b.boolVal("halal_cash_account", true),
+                    uzCardFunding = b.boolVal("uz_card_funding", false),
+                    fundingMethods = b.str("funding_methods", ""),
+                    fundingMethodsUz = b.str("funding_methods_uz", b.str("funding_methods", "")),
+                    halalNote = b.str("halal_note", ""),
+                    halalNoteUz = b.str("halal_note_uz", b.str("halal_note", "")),
+                    pros = b["pros"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                    prosUz = b["pros_uz"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                    cons = b["cons"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                    consUz = b["cons_uz"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                    rating = b.doubleVal("rating", 4.7)
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun parseStreamsJson(raw: String): List<StreamSession>? {
+        return try {
+            val arr = json.parseToJsonElement(raw).jsonObject["streams"]?.jsonArray ?: return emptyList()
+            arr.map { elem ->
+                val s = elem.jsonObject
+                StreamSession(
+                    id = s.intVal("id", 0),
+                    title = s.str("title", ""),
+                    titleUz = s.str("title_uz", s.str("title", "")),
+                    speaker = s.str("speaker", ""),
+                    speakerRole = s.str("speaker_role", ""),
+                    speakerRoleUz = s.str("speaker_role_uz", s.str("speaker_role", "")),
+                    dateLabel = s.str("date_label", ""),
+                    dateLabelUz = s.str("date_label_uz", s.str("date_label", "")),
+                    durationMin = s.intVal("duration_min", 45),
+                    status = s.str("status", "UPCOMING"),
+                    isGoldClub = s.boolVal("is_gold_club", false),
+                    topicTag = s.str("topic_tag", ""),
+                    topicTagUz = s.str("topic_tag_uz", s.str("topic_tag", ""))
+                )
+            }
         } catch (_: Exception) {
             null
         }

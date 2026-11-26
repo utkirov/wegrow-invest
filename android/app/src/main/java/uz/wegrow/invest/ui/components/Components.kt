@@ -631,7 +631,8 @@ fun StoryRingItem(
 @Composable
 fun InteractivePriceChart(
     points: List<Float>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    timeframe: String = "1M"
 ) {
     val colors = WeGrowTheme.colors
     var selectedIdx by remember(points) { mutableIntStateOf(points.lastIndex.coerceAtLeast(0)) }
@@ -659,6 +660,29 @@ fun InteractivePriceChart(
     val maxVal = remember(points) { (points.maxOrNull() ?: 200f) * 1.008f }
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
+    val pointTimeLabel = remember(selectedIdx, points.size, timeframe) {
+        val frac = if (points.size > 1) selectedIdx.toFloat() / (points.size - 1).toFloat() else 1f
+        when (timeframe.uppercase()) {
+            "1D" -> {
+                val mins = (9 * 60 + 30 + (frac * 390).roundToInt()).coerceIn(570, 960)
+                String.format("%02d:%02d EST", mins / 60, mins % 60)
+            }
+            "1W" -> {
+                val days = listOf("Пн", "Вт", "Ср", "Чт", "Пт")
+                days[(frac * (days.lastIndex)).roundToInt().coerceIn(0, days.lastIndex)]
+            }
+            "6M" -> {
+                val months = listOf("Июн", "Июл", "Авг", "Сен", "Окт", "Ноя")
+                months[(frac * (months.lastIndex)).roundToInt().coerceIn(0, months.lastIndex)]
+            }
+            "1Y" -> {
+                val quarters = listOf("Дек '25", "Мар '26", "Июн '26", "Сен '26", "Ноя '26")
+                quarters[(frac * (quarters.lastIndex)).roundToInt().coerceIn(0, quarters.lastIndex)]
+            }
+            else -> "День ${(frac * 29 + 1).roundToInt()}"
+        }
+    }
+
     Column(modifier = modifier) {
         val activePrice = points.getOrElse(selectedIdx) { points.lastOrNull() ?: 0f }
         Row(
@@ -673,7 +697,7 @@ fun InteractivePriceChart(
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "$${String.format("%.2f", activePrice)} · День ${(selectedIdx * 2 + 2).coerceAtMost(30)} ноя",
+                    text = "$${String.format("%.2f", activePrice)} · $pointTimeLabel",
                     style = WeGrowTextStyles.CaptionStrong,
                     color = if (colors.isDark) colors.brandPressed else colors.textPrimary
                 )
@@ -807,11 +831,20 @@ fun InteractivePriceChart(
                 }
         )
 
+        val xAxisLabels = remember(timeframe) {
+            when (timeframe.uppercase()) {
+                "1D" -> listOf("09:30", "11:00", "12:30", "14:30", "16:00")
+                "1W" -> listOf("Пн", "Вт", "Ср", "Чт", "Пт")
+                "6M" -> listOf("Июн", "Авг", "Сен", "Окт", "Ноя")
+                "1Y" -> listOf("Дек '25", "Мар", "Июн", "Сен", "Ноя")
+                else -> listOf("1", "8", "15", "22", "30")
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            listOf("1", "8", "15", "22", "30").forEach { d ->
+            xAxisLabels.forEach { d ->
                 Text(text = d, style = WeGrowTextStyles.CaptionM, color = colors.textTertiary)
             }
         }
@@ -1037,13 +1070,15 @@ fun WeGrowFloatingNavBar(
         listOf(
             Pair("⌂", strings.navHome),
             Pair("📈", strings.navMarket),
+            Pair("💼", strings.navPortfolio),
             Pair("🎓", strings.navCourses),
             Pair("👤", strings.navProfile)
         )
     }
 
+    val safeIndex = selectedTab.coerceIn(0, items.lastIndex)
     val animatedIndex by animateFloatAsState(
-        targetValue = selectedTab.toFloat(),
+        targetValue = safeIndex.toFloat(),
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -1054,22 +1089,23 @@ fun WeGrowFloatingNavBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         BoxWithConstraints(
             modifier = Modifier
-                .width(304.dp)
-                .height(72.dp)
+                .fillMaxWidth()
+                .widthIn(max = 376.dp)
+                .height(70.dp)
                 .shadow(16.dp, RoundedCornerShape(WeGrowRadius.full))
                 .clip(RoundedCornerShape(WeGrowRadius.full))
                 .background(colors.navBg)
                 .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.full))
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 6.dp)
         ) {
             val density = LocalDensity.current
             val slotWidth = maxWidth / items.size
-            val pillSize = 58.dp
+            val pillSize = 54.dp.coerceAtMost(slotWidth - 4.dp)
             val slotWidthPx = with(density) { slotWidth.toPx() }
             val centerOffsetPx = with(density) { ((slotWidth - pillSize) / 2f).toPx() }
 
@@ -1090,7 +1126,7 @@ fun WeGrowFloatingNavBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEachIndexed { idx, (icon, title) ->
-                    val isSelected = selectedTab == idx
+                    val isSelected = safeIndex == idx
                     val contentColor by animateColorAsState(
                         targetValue = if (isSelected) colors.textOnBrand else colors.textSecondary,
                         animationSpec = tween(180),
@@ -1110,12 +1146,13 @@ fun WeGrowFloatingNavBar(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text(text = icon, fontSize = 18.sp, color = contentColor)
+                            Text(text = icon, fontSize = 17.sp, color = contentColor)
                             Text(
                                 text = title,
                                 style = WeGrowTextStyles.Micro,
                                 color = contentColor,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -1124,3 +1161,227 @@ fun WeGrowFloatingNavBar(
         }
     }
 }
+
+/**
+ * Reusable Top Bar matching the Figcraft 44dp circular back button style
+ */
+@Composable
+fun WeGrowTopBar(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val colors = WeGrowTheme.colors
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .bouncyClickable(haptic = true, onClick = onBack)
+                .clip(CircleShape)
+                .background(colors.surface)
+                .border(1.dp, colors.border, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = title,
+            style = WeGrowTextStyles.TitleL,
+            color = colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (trailing != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            trailing()
+        }
+    }
+}
+
+/**
+ * Lightweight native Compose Markdown renderer for LMS lessons and News articles.
+ * Supports ## / ### headings, **bold**, bullet lists (- / *), numbered lists, and > quotes.
+ */
+@Composable
+fun WeGrowMarkdownText(
+    markdown: String,
+    modifier: Modifier = Modifier
+) {
+    val colors = WeGrowTheme.colors
+    val lines = remember(markdown) { markdown.trim().lines() }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        lines.forEach { rawLine ->
+            val line = rawLine.trim()
+            when {
+                line.isBlank() -> Spacer(modifier = Modifier.height(2.dp))
+                line.startsWith("### ") -> {
+                    Text(
+                        text = line.removePrefix("### ").trim(),
+                        style = WeGrowTextStyles.TitleM,
+                        color = colors.brandPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                line.startsWith("## ") -> {
+                    Text(
+                        text = line.removePrefix("## ").trim(),
+                        style = WeGrowTextStyles.TitleL,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+                line.startsWith("# ") -> {
+                    Text(
+                        text = line.removePrefix("# ").trim(),
+                        style = WeGrowTextStyles.HeadlineM,
+                        color = colors.textPrimary,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+                line.startsWith("> ") -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(WeGrowRadius.md))
+                            .background(colors.brandSoft)
+                            .border(1.dp, colors.brandPrimary.copy(alpha = 0.35f), RoundedCornerShape(WeGrowRadius.md))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(text = "✦", color = colors.brandPrimary, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = parseBoldAnnotated(line.removePrefix("> ").trim(), colors.textPrimary),
+                            style = WeGrowTextStyles.BodyS,
+                            color = colors.textPrimary
+                        )
+                    }
+                }
+                line.startsWith("- ") || line.startsWith("* ") -> {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Text(
+                            text = "•",
+                            style = WeGrowTextStyles.TitleS,
+                            color = colors.brandPrimary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = parseBoldAnnotated(line.drop(2).trim(), colors.textPrimary),
+                            style = WeGrowTextStyles.BodyM,
+                            color = colors.textSecondary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Regex("^\\d+\\.\\s+.*").matches(line) -> {
+                    val dotIdx = line.indexOf('.')
+                    val num = line.substring(0, dotIdx + 1)
+                    val rest = line.substring(dotIdx + 1).trim()
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Text(
+                            text = num,
+                            style = WeGrowTextStyles.LabelM,
+                            color = colors.brandPrimary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = parseBoldAnnotated(rest, colors.textPrimary),
+                            style = WeGrowTextStyles.BodyM,
+                            color = colors.textSecondary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                else -> {
+                    Text(
+                        text = parseBoldAnnotated(line, colors.textPrimary),
+                        style = WeGrowTextStyles.BodyM,
+                        color = colors.textSecondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun parseBoldAnnotated(
+    text: String,
+    boldColor: Color
+): androidx.compose.ui.text.AnnotatedString {
+    val parts = text.split("**")
+    return androidx.compose.ui.text.buildAnnotatedString {
+        parts.forEachIndexed { idx, part ->
+            if (idx % 2 == 1) {
+                pushStyle(
+                    androidx.compose.ui.text.SpanStyle(
+                        fontWeight = FontWeight.SemiBold,
+                        color = boldColor
+                    )
+                )
+                append(part)
+                pop()
+            } else {
+                append(part)
+            }
+        }
+    }
+}
+
+/**
+ * Floating feedback toast pill shown at top of screen for instant action confirmation
+ */
+@Composable
+fun WeGrowToastBanner(
+    message: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = WeGrowTheme.colors
+    LaunchedEffect(message) {
+        if (!message.isNullOrBlank()) {
+            delay(2600)
+            onDismiss()
+        }
+    }
+    if (!message.isNullOrBlank()) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Row(
+                modifier = Modifier
+                    .shadow(12.dp, RoundedCornerShape(WeGrowRadius.full))
+                    .clip(RoundedCornerShape(WeGrowRadius.full))
+                    .background(colors.surfaceSolid)
+                    .border(1.2.dp, colors.brandPrimary, RoundedCornerShape(WeGrowRadius.full))
+                    .bouncyClickable(onClick = onDismiss)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = message,
+                    style = WeGrowTextStyles.LabelM,
+                    color = colors.textPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+

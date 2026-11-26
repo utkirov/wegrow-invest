@@ -221,66 +221,156 @@ fun OnboardingScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         StaggeredReveal(0) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(WeGrowRadius.xl))
-                    .background(colors.surface)
-                    .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
-                    .padding(16.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(colors.brandSoft),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "N", style = WeGrowTextStyles.TitleM, color = colors.brandPrimary)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "NVDA", style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
-                        Text(text = "NVIDIA Corp.", style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
-                    }
-                    HalalSeal(status = HalalStatus.HALAL, size = 48.dp, pulsing = true)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(text = "$134,20", style = WeGrowTextStyles.NumericL, color = colors.textPrimary)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(WeGrowRadius.full))
-                            .background(colors.statusHalalSoft)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(text = "+3,42%", style = WeGrowTextStyles.LabelM, color = colors.statusHalal)
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                InteractivePriceChart(points = stock.chart1m)
-            }
-        }
+            when (step) {
+                1 -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(WeGrowRadius.xl))
+                                .background(colors.surface)
+                                .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                                .padding(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.brandSoft),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = "N", style = WeGrowTextStyles.TitleM, color = colors.brandPrimary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = "NVDA", style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
+                                    Text(text = "NVIDIA Corp.", style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+                                }
+                                HalalSeal(status = HalalStatus.HALAL, size = 48.dp, pulsing = true)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text(text = "$134,20", style = WeGrowTextStyles.NumericL, color = colors.textPrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(WeGrowRadius.full))
+                                        .background(colors.statusHalalSoft)
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Text(text = "+3,42%", style = WeGrowTextStyles.LabelM, color = colors.statusHalal)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            InteractivePriceChart(points = stock.chart1m, timeframe = "1M")
+                        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(WeGrowRadius.xl))
+                                .background(colors.surface)
+                                .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = strings.criteria4of4, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
+                            CriteriaCheckRow("Деятельность", "допустимо")
+                            CriteriaCheckRow("Долговая нагрузка", "3,1% из 30%")
+                            CriteriaCheckRow("Процентные депозиты", "8,4% из 30%")
+                            CriteriaCheckRow("Недопустимый доход", "0,3% из 5%")
+                        }
+                    }
+                }
 
-        StaggeredReveal(1) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(WeGrowRadius.xl))
-                    .background(colors.surface)
-                    .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(text = strings.criteria4of4, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
-                CriteriaCheckRow("Деятельность", "допустимо")
-                CriteriaCheckRow("Долговая нагрузка", "9,8% из 30%")
-                CriteriaCheckRow("Процентные депозиты", "4,6% из 30%")
-                CriteriaCheckRow("Недопустимый доход", "0,9% из 5%")
+                2 -> {
+                    val isUz = strings.langCode == "uz"
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(WeGrowRadius.xl))
+                            .background(colors.surface)
+                            .border(1.dp, colors.brandPrimary.copy(alpha = 0.45f), RoundedCornerShape(WeGrowRadius.xl))
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(WeGrowRadius.full))
+                                    .background(colors.brandSoft)
+                                    .padding(horizontal = 12.dp, vertical = 5.dp)
+                            ) {
+                                Text(text = "WeGrow Academy", style = WeGrowTextStyles.CaptionStrong, color = colors.brandPrimary)
+                            }
+                            Text(text = "★ 4.9 (1 240)", style = WeGrowTextStyles.TitleS, color = colors.saffron)
+                        }
+                        Text(
+                            text = if (isUz) "AQSh aksiyalariga investitsiya asoslari" else "Основы инвестирования в акции США",
+                            style = WeGrowTextStyles.TitleL,
+                            color = colors.textPrimary
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(WeGrowRadius.lg))
+                                .background(colors.surfaceMuted)
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "▶", color = colors.brandPrimary, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = strings.coursePreview, style = WeGrowTextStyles.TitleS, color = colors.textPrimary)
+                                Text(text = "8 модулей · Квизы · Сертификат", style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+                            }
+                            CourseWaveformPreview(isPlaying = true, barColor = colors.textTertiary, activeColor = colors.brandPrimary)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeGrowChip(label = "Payme", selected = true, onClick = {})
+                            WeGrowChip(label = "Click", selected = false, onClick = {})
+                            WeGrowChip(label = "🏅 Сертификат", selected = false, onClick = {})
+                        }
+                    }
+                }
+
+                else -> {
+                    val isUz = strings.langCode == "uz"
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(WeGrowRadius.xl))
+                            .background(colors.surface)
+                            .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = strings.accumulatedLabel, style = WeGrowTextStyles.CaptionStrong, color = colors.textSecondary)
+                                Text(text = "$4 850", style = WeGrowTextStyles.DisplayM, color = colors.textPrimary)
+                                Text(
+                                    text = if (isUz) "Portfel + Maqsadlar + Zakot 2,5%" else "Портфель + Цели + Закят 2,5%",
+                                    style = WeGrowTextStyles.CaptionM,
+                                    color = colors.brandPrimary
+                                )
+                            }
+                            CircularRingProgress(fraction = 0.68f, size = 96.dp)
+                        }
+                        CriteriaCheckRow(if (isUz) "Halol portfel" else "Халяль-портфель", "100% AAOIFI")
+                        CriteriaCheckRow(if (isUz) "Dividend poklash" else "Очищение дивидендов", "Тазкия авто")
+                        CriteriaCheckRow(if (isUz) "Zakot kalkulyatori" else "Калькулятор Закята", "Нисаб + 2,5%")
+                    }
+                }
             }
         }
 
@@ -560,21 +650,27 @@ fun HomeScreen(
     stocks: List<StockItem>,
     goals: List<FinancialGoal>,
     news: List<NewsItem>,
+    stories: List<StoryDeck>,
+    seenStoryIds: Set<String>,
+    unreadNotificationsCount: Int,
     online: Boolean,
     strings: AppStrings,
     onOpenStock: (StockItem) -> Unit,
     onOpenGoals: () -> Unit,
+    onOpenPortfolio: () -> Unit,
     onOpenCalculator: () -> Unit,
+    onOpenBrokers: () -> Unit,
     onOpenMarket: () -> Unit,
-    onOpenCourses: () -> Unit,
-    onOpenHalalAnalysis: (StockItem) -> Unit,
+    onOpenNotifications: () -> Unit,
+    onOpenStory: (String) -> Unit,
+    onOpenAllNews: () -> Unit,
+    onOpenNewsArticle: (NewsItem) -> Unit,
     onToggleTheme: () -> Unit,
     onToggleLanguage: () -> Unit
 ) {
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
     var searchQuery by remember { mutableStateOf("") }
-    var activeStoryDialog by remember { mutableStateOf<String?>(null) }
 
     val totalSaved = remember(goals) { goals.sumOf { it.currentAmount } }
     val searchMatches = remember(searchQuery, stocks) {
@@ -582,31 +678,7 @@ fun HomeScreen(
         else stocks.filter {
             it.symbol.contains(searchQuery, ignoreCase = true) ||
                 it.name.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    if (activeStoryDialog != null) {
-        AlertDialog(
-            onDismissRequest = { activeStoryDialog = null },
-            containerColor = colors.surfaceSolid,
-            titleContentColor = colors.textPrimary,
-            textContentColor = colors.textSecondary,
-            title = { Text(text = activeStoryDialog ?: "", style = WeGrowTextStyles.TitleL) },
-            text = {
-                Text(
-                    text = if (isUz)
-                        "WeGrow Invest 3.1 MVP: AQSh aksiyalari halol skriningi, moliyaviy maqsadlar va amaliy investitsiya kurslari."
-                    else
-                        "WeGrow Invest 3.1 MVP: Ежеквартальный пересмотр акций США по стандарту AAOIFI и методике WeGrow, аналитика и прямые эфиры.",
-                    style = WeGrowTextStyles.BodyM
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { activeStoryDialog = null }) {
-                    Text(text = "OK", color = colors.brandPrimary)
-                }
-            }
-        )
+        }.take(6)
     }
 
     LazyColumn(
@@ -654,7 +726,6 @@ fun HomeScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    // Quick RU / UZ pill for 1-tap MVP switching
                     Box(
                         modifier = Modifier
                             .height(38.dp)
@@ -672,7 +743,6 @@ fun HomeScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    // Quick Light/Dark theme toggle
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -685,23 +755,46 @@ fun HomeScreen(
                         Text(text = if (colors.isDark) "☀" else "🌙", fontSize = 17.sp)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
+                    // Live clickable Notifications Bell with unread count badge
                     Box(
                         modifier = Modifier
                             .size(40.dp)
+                            .bouncyClickable(haptic = true, onClick = onOpenNotifications)
                             .clip(CircleShape)
                             .background(colors.surface)
-                            .border(1.dp, colors.border, CircleShape),
+                            .border(
+                                width = if (unreadNotificationsCount > 0) 1.2.dp else 1.dp,
+                                color = if (unreadNotificationsCount > 0) colors.brandPrimary else colors.border,
+                                shape = CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = "🔔", fontSize = 16.sp)
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(7.dp)
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(if (online) colors.statusHalal else colors.saffron)
-                        )
+                        if (unreadNotificationsCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(16.dp)
+                                    .clip(CircleShape)
+                                    .background(colors.brandPrimary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = unreadNotificationsCount.coerceAtMost(9).toString(),
+                                    style = WeGrowTextStyles.Micro,
+                                    color = colors.textOnBrand
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(7.dp)
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (online) colors.statusHalal else colors.saffron)
+                            )
+                        }
                     }
                 }
             }
@@ -711,30 +804,13 @@ fun HomeScreen(
         item(key = "home_stories") {
             StaggeredReveal(1) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    item {
-                        StoryRingItem(strings.storyNews, seen = false, badgeSymbol = "📰") {
-                            activeStoryDialog = strings.storyNews
-                        }
-                    }
-                    item {
-                        StoryRingItem(strings.storyCourses, seen = false, badgeSymbol = "🎓") {
-                            onOpenCourses()
-                        }
-                    }
-                    item {
-                        StoryRingItem(strings.storyHalal, seen = false, badgeSymbol = "✦") {
-                            stocks.firstOrNull()?.let { onOpenHalalAnalysis(it) }
-                        }
-                    }
-                    item {
-                        StoryRingItem(strings.storyGoldClub, seen = true, badgeSymbol = "👑") {
-                            activeStoryDialog = strings.storyGoldClub
-                        }
-                    }
-                    item {
-                        StoryRingItem(strings.storyStreams, seen = true, badgeSymbol = "▶") {
-                            activeStoryDialog = strings.storyStreams
-                        }
+                    items(stories, key = { it.id }) { deck ->
+                        StoryRingItem(
+                            label = if (isUz) deck.labelUz else deck.label,
+                            seen = deck.id in seenStoryIds,
+                            badgeSymbol = deck.badgeSymbol,
+                            onClick = { onOpenStory(deck.id) }
+                        )
                     }
                 }
             }
@@ -785,15 +861,9 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(18.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item { WeGrowChip(label = strings.chipGoals, selected = true, onClick = onOpenGoals) }
-                        item {
-                            WeGrowChip(
-                                label = strings.chipExpenses,
-                                selected = false,
-                                onClick = { stocks.firstOrNull()?.let { onOpenHalalAnalysis(it) } }
-                            )
-                        }
+                        item { WeGrowChip(label = strings.chipExpenses, selected = false, onClick = onOpenPortfolio) }
                         item { WeGrowChip(label = strings.chipCalculator, selected = false, onClick = onOpenCalculator) }
-                        item { WeGrowChip(label = strings.chipBrokers, selected = false, onClick = onOpenMarket) }
+                        item { WeGrowChip(label = strings.chipBrokers, selected = false, onClick = onOpenBrokers) }
                     }
                 }
             }
@@ -947,21 +1017,19 @@ fun HomeScreen(
                         text = strings.seeAll,
                         style = WeGrowTextStyles.LabelM,
                         color = colors.brandPrimary,
-                        modifier = Modifier.bouncyClickable(haptic = true, onClick = onOpenMarket)
+                        modifier = Modifier.bouncyClickable(haptic = true, onClick = onOpenAllNews)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        itemsIndexed(news, key = { _, item -> "news_${item.id}" }) { idx, item ->
+        itemsIndexed(news.take(4), key = { _, item -> "news_${item.id}" }) { idx, item ->
             StaggeredReveal(4 + idx) {
                 NewsCardItem(
                     item = item,
                     isUz = isUz,
-                    onClick = {
-                        stocks.find { it.symbol == item.ticker }?.let(onOpenStock)
-                    }
+                    onClick = { onOpenNewsArticle(item) }
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -1030,14 +1098,19 @@ fun TickerDetailScreen(
     activeChartPoints: List<Float>? = null,
     isWatchlisted: Boolean = false,
     onToggleWatchlist: () -> Unit = {},
-    onQuickAlert: () -> Unit = {},
+    onCreateAlert: (condition: String, targetPrice: Double) -> Unit = { _, _ -> },
+    onAddToPortfolio: (symbol: String, side: String, qty: Double, price: Double) -> Unit = { _, _, _, _ -> },
     onSelectTimeframe: (String) -> Unit = {},
     onRefreshStock: () -> Unit = {},
     onBack: () -> Unit,
-    onOpenHalalAnalysis: (StockItem) -> Unit
+    onOpenHalalAnalysis: (StockItem) -> Unit,
+    onOpenNewsArticle: (NewsItem) -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
+    var showAlertDialog by remember { mutableStateOf(false) }
+    var showAddPortfolioDialog by remember { mutableStateOf(false) }
+
     val periods = remember {
         listOf(
             "1D" to "1Д",
@@ -1048,8 +1121,97 @@ fun TickerDetailScreen(
         )
     }
 
+    val periodTitle = remember(activeTimeframe, isUz) {
+        when (activeTimeframe.uppercase()) {
+            "1D" -> if (isUz) "Kunlik narx" else "Цена за день"
+            "1W" -> if (isUz) "Haftalik narx" else "Цена за неделю"
+            "6M" -> if (isUz) "6 oylik narx" else "Цена за 6 месяцев"
+            "1Y" -> if (isUz) "Yillik narx" else "Цена за год"
+            else -> if (isUz) "Bir oylik narx" else "Цена за месяц"
+        }
+    }
+
     val displayedChart = remember(stock, activeTimeframe, activeChartPoints) {
         activeChartPoints?.takeIf { it.size >= 2 } ?: stock.chartForTimeframe(activeTimeframe)
+    }
+
+    if (showAlertDialog) {
+        var condition by remember(stock.symbol) { mutableStateOf("ABOVE") }
+        var targetInput by remember(stock.symbol) {
+            mutableStateOf(String.format("%.2f", stock.price * 1.05).replace(',', '.'))
+        }
+        AlertDialog(
+            onDismissRequest = { showAlertDialog = false },
+            containerColor = colors.surfaceSolid,
+            titleContentColor = colors.textPrimary,
+            title = {
+                Text(
+                    text = if (isUz) "${stock.symbol} uchun narx alerti" else "Ценовой алерт для ${stock.symbol}",
+                    style = WeGrowTextStyles.TitleL
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WeGrowChip(
+                            label = if (isUz) "Yuqori (↑)" else "Выше (↑)",
+                            selected = condition == "ABOVE",
+                            onClick = {
+                                condition = "ABOVE"
+                                targetInput = String.format("%.2f", stock.price * 1.05).replace(',', '.')
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        WeGrowChip(
+                            label = if (isUz) "Past (↓)" else "Ниже (↓)",
+                            selected = condition == "BELOW",
+                            onClick = {
+                                condition = "BELOW"
+                                targetInput = String.format("%.2f", stock.price * 0.95).replace(',', '.')
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    WeGrowTextField(
+                        label = if (isUz) "Maqsad narx (USD)" else "Целевая цена (USD)",
+                        value = targetInput,
+                        onValueChange = { targetInput = it },
+                        helper = "${if (isUz) "Joriy narx" else "Текущая цена"}: $${String.format("%.2f", stock.price)}"
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val target = targetInput.replace(',', '.').toDoubleOrNull()
+                        if (target != null && target > 0.0) {
+                            onCreateAlert(condition, target)
+                            showAlertDialog = false
+                        }
+                    }
+                ) {
+                    Text(text = if (isUz) "Saqlash" else "Создать", color = colors.brandPrimary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAlertDialog = false }) {
+                    Text(text = if (isUz) "Bekor" else "Отмена", color = colors.textSecondary)
+                }
+            }
+        )
+    }
+
+    if (showAddPortfolioDialog) {
+        uz.wegrow.invest.ui.screens.portfolio.AddTransactionDialog(
+            isUz = isUz,
+            defaultSymbol = stock.symbol,
+            defaultPrice = stock.price,
+            onDismiss = { showAddPortfolioDialog = false },
+            onSubmit = { sym, side, qty, price ->
+                showAddPortfolioDialog = false
+                onAddToPortfolio(sym, side, qty, price)
+            }
+        )
     }
 
     Column(
@@ -1091,7 +1253,7 @@ fun TickerDetailScreen(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .bouncyClickable(haptic = true, onClick = onQuickAlert)
+                        .bouncyClickable(haptic = true) { showAlertDialog = true }
                         .clip(CircleShape)
                         .background(colors.surface)
                         .border(1.dp, colors.border, CircleShape),
@@ -1199,7 +1361,7 @@ fun TickerDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = strings.priceForMonth, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
+                    Text(text = periodTitle, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
                     Text(
                         text = "${activeTimeframe.uppercase()} · ${if (stock.dataSource == "live") "LIVE" else "AAOIFI"}",
                         style = WeGrowTextStyles.CaptionM,
@@ -1207,7 +1369,7 @@ fun TickerDetailScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                InteractivePriceChart(points = displayedChart)
+                InteractivePriceChart(points = displayedChart, timeframe = activeTimeframe)
             }
         }
 
@@ -1246,6 +1408,15 @@ fun TickerDetailScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        WeGrowButton(
+            text = if (isUz) "+ Portfelga qo'shish (${stock.symbol})" else "+ Добавить в портфель (${stock.symbol})",
+            outlined = true,
+            onClick = { showAddPortfolioDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         StaggeredReveal(3) {
@@ -1270,8 +1441,9 @@ fun TickerDetailScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
         news.firstOrNull()?.let { n ->
-            NewsCardItem(item = n, isUz = isUz, onClick = {})
+            NewsCardItem(item = n, isUz = isUz, onClick = { onOpenNewsArticle(n) })
         }
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -1299,7 +1471,8 @@ private fun MetricTileCard(label: String, value: String, modifier: Modifier = Mo
 fun HalalAnalysisScreen(
     stock: StockItem,
     strings: AppStrings,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenMethodology: () -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
@@ -1511,6 +1684,13 @@ fun HalalAnalysisScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+        WeGrowButton(
+            text = if (isUz) "AAOIFI №21 metodikasi qanday ishlaydi? →" else "Как работает стандарт AAOIFI №21? →",
+            outlined = true,
+            onClick = onOpenMethodology,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "ⓘ ${strings.notInvestmentAdvice}",
             style = WeGrowTextStyles.CaptionM,
@@ -1518,6 +1698,7 @@ fun HalalAnalysisScreen(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -1597,7 +1778,7 @@ private fun CriterionTileCard(
 }
 
 /**
- * Screen 09: Рынок (LazyColumn Market Screen with LivePulseDot, Halal filter, Heatmap & Top Gainers)
+ * Screen 09: Рынок (LazyColumn Market Screen with LivePulseDot, Halal filter, Clickable Heatmap & Sorting)
  */
 @Composable
 fun MarketScreen(
@@ -1613,22 +1794,30 @@ fun MarketScreen(
     var halalOnly by remember { mutableStateOf(true) }
     var selectedSector by remember { mutableStateOf("ALL") }
     var searchQuery by remember { mutableStateOf("") }
+    var sortMode by remember { mutableStateOf("CAP") } // CAP | GAINERS | LOSERS
 
     val availableSectors = remember(stocks) {
         stocks.map { it.sector to it.sectorUz }.distinctBy { it.first }
     }
 
-    val filteredStocks = remember(stocks, halalOnly, selectedSector, searchQuery) {
+    val filteredStocks = remember(stocks, halalOnly, selectedSector, searchQuery, sortMode) {
         val q = searchQuery.trim().lowercase()
-        stocks.filter { st ->
+        val base = stocks.filter { st ->
             val passHalal = !halalOnly || st.halalStatus == HalalStatus.HALAL
-            val passSector = selectedSector == "ALL" || st.sector.equals(selectedSector, ignoreCase = true)
+            val passSector = selectedSector == "ALL" ||
+                st.sector.equals(selectedSector, ignoreCase = true) ||
+                st.sector.startsWith(selectedSector.removeSuffix("."), ignoreCase = true)
             val passQuery = q.isBlank() ||
                 st.symbol.lowercase().contains(q) ||
                 st.name.lowercase().contains(q) ||
                 st.sector.lowercase().contains(q) ||
                 st.sectorUz.lowercase().contains(q)
             passHalal && passSector && passQuery
+        }
+        when (sortMode) {
+            "GAINERS" -> base.sortedByDescending { it.changePct }
+            "LOSERS" -> base.sortedBy { it.changePct }
+            else -> base
         }
     }
 
@@ -1775,7 +1964,12 @@ fun MarketScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = strings.sectorHeatmapTitle, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-                        Text(text = strings.perDay, style = WeGrowTextStyles.CaptionM, color = colors.textTertiary)
+                        Text(
+                            text = if (selectedSector != "ALL") (if (isUz) "Filterni tozalash" else "Сбросить фильтр") else strings.perDay,
+                            style = WeGrowTextStyles.CaptionStrong,
+                            color = if (selectedSector != "ALL") colors.brandPrimary else colors.textTertiary,
+                            modifier = Modifier.bouncyClickable(enabled = selectedSector != "ALL") { selectedSector = "ALL" }
+                        )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1794,12 +1988,20 @@ fun MarketScreen(
                                     }
                                     val darkTextOnBright = tile.tone in listOf("UP_3", "UP_2", "DOWN_2")
                                     val tileFg = if (darkTextOnBright) Color(0xFF0B2016) else colors.textPrimary
+                                    val isTileActive = selectedSector.equals(tile.name, ignoreCase = true)
                                     Column(
                                         modifier = Modifier
                                             .weight(tile.weight)
                                             .height(64.dp)
+                                            .bouncyClickable(haptic = true) {
+                                                selectedSector = if (isTileActive) "ALL" else tile.name
+                                            }
                                             .clip(RoundedCornerShape(WeGrowRadius.md))
                                             .background(tileBg)
+                                            .then(
+                                                if (isTileActive) Modifier.border(2.dp, colors.textPrimary, RoundedCornerShape(WeGrowRadius.md))
+                                                else Modifier
+                                            )
                                             .padding(10.dp),
                                         verticalArrangement = Arrangement.SpaceBetween
                                     ) {
@@ -1834,13 +2036,38 @@ fun MarketScreen(
         }
 
         item(key = "market_gainers_header") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = strings.topGainersTitle, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-                Text(text = "${filteredStocks.size}", style = WeGrowTextStyles.LabelM, color = colors.brandPrimary)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = strings.topGainersTitle, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
+                    Text(text = "${filteredStocks.size}", style = WeGrowTextStyles.LabelM, color = colors.brandPrimary)
+                }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        WeGrowChip(
+                            label = if (isUz) "Kapitalizatsiya" else "Капитализация",
+                            selected = sortMode == "CAP",
+                            onClick = { sortMode = "CAP" }
+                        )
+                    }
+                    item {
+                        WeGrowChip(
+                            label = if (isUz) "O'sish %" else "Лидеры роста ↑",
+                            selected = sortMode == "GAINERS",
+                            onClick = { sortMode = "GAINERS" }
+                        )
+                    }
+                    item {
+                        WeGrowChip(
+                            label = if (isUz) "Pasayish %" else "Снижение ↓",
+                            selected = sortMode == "LOSERS",
+                            onClick = { sortMode = "LOSERS" }
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -2218,7 +2445,7 @@ private fun CourseStatTile(icon: String, title: String, caption: String, modifie
 }
 
 /**
- * Screen 11: Цели (LazyColumn Financial Goals Tracker with AnimatedNumberText & AnimatedProgressBar)
+ * Screen 11: Цели (Financial Goals Tracker with Back button, fixed Completed empty state & Custom Top-up / Delete)
  */
 @Composable
 fun GoalsScreen(
@@ -2226,24 +2453,26 @@ fun GoalsScreen(
     strings: AppStrings,
     onContributeGoal: (Int, Double) -> Unit,
     onCreateGoal: (String, Double, Double) -> Unit,
-    onOpenCalculator: () -> Unit
+    onDeleteGoal: (Int) -> Unit = {},
+    onOpenCalculator: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
     var activeTab by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var manageGoal by remember { mutableStateOf<FinancialGoal?>(null) }
 
     val totalSaved = remember(goals) { goals.sumOf { it.currentAmount } }
     val totalTarget = remember(goals) { goals.sumOf { it.targetAmount }.coerceAtLeast(1.0) }
     val overallFraction = (totalSaved / totalTarget).toFloat().coerceIn(0f, 1f)
 
     val visibleGoals = remember(goals, activeTab) {
-        val list = if (activeTab == 0) {
+        if (activeTab == 0) {
             goals.filter { it.currentAmount < it.targetAmount }
         } else {
             goals.filter { it.currentAmount >= it.targetAmount }
         }
-        list.ifEmpty { goals }
     }
 
     if (showCreateDialog) {
@@ -2279,13 +2508,63 @@ fun GoalsScreen(
                 TextButton(
                     onClick = {
                         val t = titleInput.ifBlank { if (isUz) "Yangi maqsad" else "Инвестиционный портфель" }
-                        val target = targetInput.toDoubleOrNull() ?: 5000.0
-                        val monthly = monthlyInput.toDoubleOrNull() ?: 250.0
+                        val target = targetInput.replace(',', '.').toDoubleOrNull() ?: 5000.0
+                        val monthly = monthlyInput.replace(',', '.').toDoubleOrNull() ?: 250.0
                         onCreateGoal(t, target, monthly)
                         showCreateDialog = false
                     }
                 ) {
                     Text(text = strings.btnContinue, color = colors.brandPrimary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text(text = if (isUz) "Bekor" else "Отмена", color = colors.textSecondary)
+                }
+            }
+        )
+    }
+
+    manageGoal?.let { g ->
+        var customAmount by remember(g.id) { mutableStateOf("250") }
+        AlertDialog(
+            onDismissRequest = { manageGoal = null },
+            containerColor = colors.surfaceSolid,
+            titleContentColor = colors.textPrimary,
+            title = { Text(text = if (isUz) g.titleUz else g.title, style = WeGrowTextStyles.TitleL) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "$${g.currentAmount.roundToInt()} / $${g.targetAmount.roundToInt()} (${(g.progressFraction * 100).roundToInt()}%)",
+                        style = WeGrowTextStyles.TitleS,
+                        color = colors.brandPrimary
+                    )
+                    WeGrowTextField(
+                        label = if (isUz) "Qo'shish summasi (USD)" else "Сумма пополнения (USD)",
+                        value = customAmount,
+                        onValueChange = { customAmount = it }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val amt = customAmount.replace(',', '.').toDoubleOrNull() ?: 0.0
+                        if (amt > 0.0) onContributeGoal(g.id, amt)
+                        manageGoal = null
+                    }
+                ) {
+                    Text(text = if (isUz) "To'ldirish ✓" else "Пополнить ✓", color = colors.brandPrimary)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteGoal(g.id)
+                        manageGoal = null
+                    }
+                ) {
+                    Text(text = if (isUz) "O'chirish" else "Удалить цель", color = colors.statusHaram)
                 }
             }
         )
@@ -2299,15 +2578,28 @@ fun GoalsScreen(
     ) {
         item(key = "goals_header") {
             StaggeredReveal(0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = strings.goalsTitle, style = WeGrowTextStyles.DisplayM, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WeGrowChip(label = "🧮", selected = false, onClick = onOpenCalculator)
-                        WeGrowChip(label = "+ ${strings.addGoalBtn}", selected = true, onClick = { showCreateDialog = true })
+                if (onBack != null) {
+                    WeGrowTopBar(
+                        title = strings.goalsTitle,
+                        onBack = onBack,
+                        trailing = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                WeGrowChip(label = "🧮", selected = false, onClick = onOpenCalculator)
+                                WeGrowChip(label = "+", selected = true, onClick = { showCreateDialog = true })
+                            }
+                        }
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = strings.goalsTitle, style = WeGrowTextStyles.DisplayM, color = colors.textPrimary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeGrowChip(label = "🧮", selected = false, onClick = onOpenCalculator)
+                            WeGrowChip(label = "+ ${strings.addGoalBtn}", selected = true, onClick = { showCreateDialog = true })
+                        }
                     }
                 }
             }
@@ -2347,7 +2639,7 @@ fun GoalsScreen(
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = if (isUz) "+$350 noyabrda" else "+$350 в ноябре",
+                                text = if (isUz) "+$350 shu oyda" else "+$350 в этом месяце",
                                 style = WeGrowTextStyles.CaptionStrong,
                                 color = colors.statusHalal
                             )
@@ -2393,16 +2685,54 @@ fun GoalsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        itemsIndexed(visibleGoals, key = { _, g -> "goal_${g.id}" }) { idx, g ->
-            StaggeredReveal(idx) {
-                GoalItemCard(
-                    goal = g,
-                    isUz = isUz,
-                    topUpLabel = strings.topUpGoalBtn,
-                    onTopUp = { onContributeGoal(g.id, 100.0) }
-                )
+        if (visibleGoals.isEmpty()) {
+            item(key = "goals_empty_tab") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(WeGrowRadius.xl))
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = if (activeTab == 1) "🏆" else "🎯", fontSize = 32.sp)
+                    Text(
+                        text = if (activeTab == 1) {
+                            if (isUz) "Hali yakunlangan maqsadlar yo'q" else "Завершённых целей пока нет"
+                        } else {
+                            if (isUz) "Faol maqsadlar yo'q" else "Нет активных целей"
+                        },
+                        style = WeGrowTextStyles.TitleM,
+                        color = colors.textPrimary
+                    )
+                    Text(
+                        text = if (activeTab == 1) {
+                            if (isUz) "Maqsadlaringizni to'ldirib boring — 100% ga yetganda bu yerda ko'rinadi"
+                            else "Пополняйте активные цели — как только цель достигнет 100%, она появится здесь"
+                        } else {
+                            if (isUz) "Yangi moliyaviy maqsad yarating" else "Создайте первую цель или перенесите расчёт из калькулятора"
+                        },
+                        style = WeGrowTextStyles.BodyS,
+                        color = colors.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+        } else {
+            itemsIndexed(visibleGoals, key = { _, g -> "goal_${g.id}" }) { idx, g ->
+                StaggeredReveal(idx) {
+                    GoalItemCard(
+                        goal = g,
+                        isUz = isUz,
+                        topUpLabel = strings.topUpGoalBtn,
+                        onTopUp = { onContributeGoal(g.id, 100.0) },
+                        onClickCard = { manageGoal = g }
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
@@ -2412,7 +2742,8 @@ private fun GoalItemCard(
     goal: FinancialGoal,
     isUz: Boolean,
     topUpLabel: String,
-    onTopUp: () -> Unit
+    onTopUp: () -> Unit,
+    onClickCard: () -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
     val pct = (goal.progressFraction * 100).roundToInt()
@@ -2420,6 +2751,7 @@ private fun GoalItemCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .bouncyClickable(haptic = true, onClick = onClickCard)
             .clip(RoundedCornerShape(WeGrowRadius.xl))
             .background(colors.surface)
             .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
@@ -2501,66 +2833,61 @@ private fun GoalItemCard(
 }
 
 /**
- * Screen 12: Калькулятор сложного процента (zero-jank sliders + AnimatedNumberText + CompoundGrowthChart)
+ * Screen 12: Калькуляторы (Сложный %, Дивиденды с Тазкией, Снятие FIRE и Закят 2,5%)
  */
 @Composable
 fun CalculatorScreen(
     strings: AppStrings,
+    portfolioValueUsd: Double = 0.0,
+    initialMode: Int = 0,
     onBack: () -> Unit,
     onCreateGoalFromCalc: (String, Double, Double) -> Unit
 ) {
     val colors = WeGrowTheme.colors
     val haptics = LocalHapticFeedback.current
-    var mode by remember { mutableIntStateOf(0) }
-    var initialAmount by remember { mutableFloatStateOf(1000f) }
+    val isUz = strings.langCode == "uz"
+
+    var mode by remember(initialMode) { mutableIntStateOf(initialMode.coerceIn(0, 3)) }
+    var initialAmount by remember { mutableFloatStateOf(if (mode == 2) 50000f else 1000f) }
     var monthlyTopUp by remember { mutableFloatStateOf(200f) }
     var annualYield by remember { mutableFloatStateOf(8f) }
     var years by remember { mutableFloatStateOf(10f) }
     var capIndex by remember { mutableIntStateOf(0) }
+
+    // Zakat tab state
+    var zakatCash by remember { mutableFloatStateOf(3000f) }
+    var zakatStocks by remember(portfolioValueUsd) {
+        mutableFloatStateOf(if (portfolioValueUsd > 0) portfolioValueUsd.toFloat().coerceIn(0f, 100000f) else 5000f)
+    }
+    var zakatGold by remember { mutableFloatStateOf(1500f) }
+    var zakatDebt by remember { mutableFloatStateOf(500f) }
 
     val periodsPerYear = when (capIndex) {
         0 -> 12
         1 -> 4
         else -> 1
     }
-
     val yInt = years.roundToInt().coerceAtLeast(1)
-    val rate = (annualYield / 100.0)
 
-    val (totalSeries, investedSeries) = remember(initialAmount, monthlyTopUp, annualYield, yInt, periodsPerYear, mode) {
-        val totals = mutableListOf<Float>()
-        val invs = mutableListOf<Float>()
-        for (y in 0..yInt) {
-            val inv = initialAmount + monthlyTopUp * 12f * y
-            invs.add(inv)
-            if (y == 0) {
-                totals.add(initialAmount)
-            } else {
-                val n = periodsPerYear.toDouble()
-                val rPerPeriod = rate / n
-                val totalPeriods = n * y
-                val compoundPrincipal = initialAmount * (1.0 + rPerPeriod).pow(totalPeriods)
-                val contribPerPeriod = monthlyTopUp * (12.0 / n)
-                val compoundContrib = if (rPerPeriod > 0.00001) {
-                    contribPerPeriod * (((1.0 + rPerPeriod).pow(totalPeriods) - 1.0) / rPerPeriod)
-                } else {
-                    contribPerPeriod * totalPeriods
-                }
-                val rawTotal = (compoundPrincipal + compoundContrib).toFloat()
-                val adjusted = when (mode) {
-                    1 -> rawTotal * 0.92f
-                    2 -> (rawTotal * 0.85f).coerceAtLeast(inv)
-                    else -> rawTotal
-                }
-                totals.add(adjusted)
-            }
-        }
-        Pair(totals, invs)
+    val projection = remember(initialAmount, monthlyTopUp, annualYield, yInt, periodsPerYear, mode) {
+        FinancialCalculatorEngine.compute(
+            mode = mode.coerceIn(0, 2),
+            initialAmount = initialAmount.toDouble(),
+            monthlyTopUp = monthlyTopUp.toDouble(),
+            annualYieldPct = annualYield.toDouble(),
+            years = yInt,
+            periodsPerYear = periodsPerYear
+        )
     }
 
-    val finalTotal = totalSeries.lastOrNull()?.toDouble() ?: 38809.0
-    val finalInvested = investedSeries.lastOrNull()?.toDouble() ?: 25000.0
-    val finalProfit = (finalTotal - finalInvested).coerceAtLeast(0.0)
+    val zakatResult = remember(zakatCash, zakatStocks, zakatGold, zakatDebt) {
+        ZakatCalculatorEngine.calculate(
+            cashUsd = zakatCash.toDouble(),
+            halalStocksUsd = zakatStocks.toDouble(),
+            goldAndCryptoUsd = zakatGold.toDouble(),
+            shortTermDebtUsd = zakatDebt.toDouble()
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -2569,176 +2896,392 @@ fun CalculatorScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .bouncyClickable(haptic = true, onClick = onBack)
-                    .clip(CircleShape)
-                    .background(colors.surface)
-                    .border(1.dp, colors.border, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text = strings.calculatorsTitle, style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-        }
+        WeGrowTopBar(title = strings.calculatorsTitle, onBack = onBack)
 
         Spacer(modifier = Modifier.height(14.dp))
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item { WeGrowChip(strings.calcCompound, selected = mode == 0, onClick = { mode = 0 }) }
-            item { WeGrowChip(strings.calcDividends, selected = mode == 1, onClick = { mode = 1 }) }
-            item { WeGrowChip(strings.calcWithdrawal, selected = mode == 2, onClick = { mode = 2 }) }
+            item {
+                WeGrowChip(strings.calcDividends, selected = mode == 1, onClick = {
+                    mode = 1
+                    if (annualYield > 10f) annualYield = 4f
+                })
+            }
+            item {
+                WeGrowChip(strings.calcWithdrawal, selected = mode == 2, onClick = {
+                    mode = 2
+                    if (initialAmount < 10000f) initialAmount = 25000f
+                })
+            }
+            item { WeGrowChip(strings.calcZakat, selected = mode == 3, onClick = { mode = 3 }) }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        CalculatorSliderItem(
-            label = strings.initialAmount,
-            valueLabel = "$${initialAmount.roundToInt()}",
-            value = initialAmount,
-            valueRange = 100f..25000f,
-            onValueChange = { raw ->
-                val snapped = ((raw / 100f).roundToInt() * 100f).coerceIn(100f, 25000f)
-                if (snapped != initialAmount) {
-                    initialAmount = snapped
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            }
-        )
-        CalculatorSliderItem(
-            label = strings.monthlyTopUp,
-            valueLabel = "$${monthlyTopUp.roundToInt()}",
-            value = monthlyTopUp,
-            valueRange = 50f..2500f,
-            onValueChange = { raw ->
-                val snapped = ((raw / 50f).roundToInt() * 50f).coerceIn(50f, 2500f)
-                if (snapped != monthlyTopUp) {
-                    monthlyTopUp = snapped
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            }
-        )
-        CalculatorSliderItem(
-            label = strings.annualYield,
-            valueLabel = "${annualYield.roundToInt()}%",
-            value = annualYield,
-            valueRange = 2f..25f,
-            onValueChange = { raw ->
-                val snapped = raw.roundToInt().toFloat().coerceIn(2f, 25f)
-                if (snapped != annualYield) {
-                    annualYield = snapped
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            }
-        )
-        CalculatorSliderItem(
-            label = strings.termYears,
-            valueLabel = "${yInt} ${strings.yearsUnit}",
-            value = years,
-            valueRange = 1f..30f,
-            onValueChange = { raw ->
-                val snapped = raw.roundToInt().toFloat().coerceIn(1f, 30f)
-                if (snapped != years) {
-                    years = snapped
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = strings.capitalization, style = WeGrowTextStyles.LabelM, color = colors.textSecondary)
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .clip(RoundedCornerShape(WeGrowRadius.md))
-                .background(colors.surface)
-                .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.md))
-                .padding(4.dp)
-        ) {
-            listOf(strings.capMonthly, strings.capQuarterly, strings.capYearly).forEachIndexed { idx, title ->
-                val sel = capIndex == idx
-                Box(
+        if (mode == 3) {
+            // ---- ZAKAT 2.5% CALCULATOR ----
+            if (portfolioValueUsd > 0.0) {
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .bouncyClickable(haptic = true) { capIndex = idx }
-                        .clip(RoundedCornerShape(WeGrowRadius.sm))
-                        .background(if (sel) colors.brandPrimary else Color.Transparent),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(WeGrowRadius.lg))
+                        .background(colors.brandSoft)
+                        .border(1.dp, colors.brandPrimary.copy(alpha = 0.4f), RoundedCornerShape(WeGrowRadius.lg))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = title,
-                        style = WeGrowTextStyles.TitleS,
-                        color = if (sel) colors.textOnBrand else colors.textSecondary
+                        text = if (isUz) "Portfel qiymati: $${portfolioValueUsd.roundToInt()}"
+                        else "Ваш портфель: $${portfolioValueUsd.roundToInt()}",
+                        style = WeGrowTextStyles.CaptionStrong,
+                        color = colors.textPrimary
+                    )
+                    WeGrowChip(
+                        label = if (isUz) "Qo'llash ✓" else "Подставить ✓",
+                        selected = true,
+                        onClick = { zakatStocks = portfolioValueUsd.toFloat().coerceIn(0f, 100000f) }
                     )
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            CalculatorSliderItem(
+                label = if (isUz) "Naqd pul va bank kartalari" else "Наличные и деньги на счетах",
+                valueLabel = "$${zakatCash.roundToInt()}",
+                value = zakatCash,
+                valueRange = 0f..50000f,
+                onValueChange = { raw ->
+                    val snapped = ((raw / 250f).roundToInt() * 250f).coerceIn(0f, 50000f)
+                    if (snapped != zakatCash) {
+                        zakatCash = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = if (isUz) "Halol aksiyalar (bozor qiymati)" else "Халяльные акции (рыночная стоимость)",
+                valueLabel = "$${zakatStocks.roundToInt()}",
+                value = zakatStocks,
+                valueRange = 0f..100000f,
+                onValueChange = { raw ->
+                    val snapped = ((raw / 500f).roundToInt() * 500f).coerceIn(0f, 100000f)
+                    if (snapped != zakatStocks) {
+                        zakatStocks = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = if (isUz) "Oltin, kumush va boshqa likvid aktivlar" else "Золото, серебро и прочие активы",
+                valueLabel = "$${zakatGold.roundToInt()}",
+                value = zakatGold,
+                valueRange = 0f..50000f,
+                onValueChange = { raw ->
+                    val snapped = ((raw / 250f).roundToInt() * 250f).coerceIn(0f, 50000f)
+                    if (snapped != zakatGold) {
+                        zakatGold = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = if (isUz) "Qisqa muddatli qarzlar (ayiriladi)" else "Краткосрочные долги (вычитаются)",
+                valueLabel = "−$${zakatDebt.roundToInt()}",
+                value = zakatDebt,
+                valueRange = 0f..30000f,
+                onValueChange = { raw ->
+                    val snapped = ((raw / 250f).roundToInt() * 250f).coerceIn(0f, 30000f)
+                    if (snapped != zakatDebt) {
+                        zakatDebt = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
 
-        StaggeredReveal(0) {
+            Spacer(modifier = Modifier.height(14.dp))
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(WeGrowRadius.xl))
                     .background(colors.surface)
-                    .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
-                    .padding(16.dp)
+                    .border(
+                        width = 1.4.dp,
+                        color = if (zakatResult.isAboveNisab) colors.brandPrimary else colors.border,
+                        shape = RoundedCornerShape(WeGrowRadius.xl)
+                    )
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isUz) "Yillik Zakot (2,5%)" else "Годовой Закят (2,5%)",
+                        style = WeGrowTextStyles.TitleM,
+                        color = colors.textSecondary
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(WeGrowRadius.full))
+                            .background(if (zakatResult.isAboveNisab) colors.statusHalalSoft else colors.surfaceMuted)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (zakatResult.isAboveNisab) {
+                                if (isUz) "Nisobdan yuqori" else "Выше нисаба"
+                            } else {
+                                if (isUz) "Nisobdan past" else "Ниже нисаба"
+                            },
+                            style = WeGrowTextStyles.CaptionStrong,
+                            color = if (zakatResult.isAboveNisab) colors.statusHalal else colors.textTertiary
+                        )
+                    }
+                }
+
+                AnimatedNumberText(
+                    targetValue = zakatResult.zakatDueUsd,
+                    formatter = { "$${String.format("%,.2f", it).replace(',', ' ')}" },
+                    style = WeGrowTextStyles.DisplayM,
+                    color = if (zakatResult.isAboveNisab) colors.brandPrimary else colors.textTertiary
+                )
+
                 Text(
-                    text = "${strings.inYearsPrefix} $yInt ${strings.yearsUnit}",
+                    text = if (isUz) "Sof zakot bazasi: $${zakatResult.netZakatableUsd.roundToInt()} · Nisob (85g oltin): $${zakatResult.nisabUsd.roundToInt()}"
+                    else "Облагаемая база: $${zakatResult.netZakatableUsd.roundToInt()} · Нисаб (85 г золота): $${zakatResult.nisabUsd.roundToInt()}",
                     style = WeGrowTextStyles.CaptionM,
                     color = colors.textSecondary
                 )
-                AnimatedNumberText(
-                    targetValue = finalTotal,
-                    formatter = { "$${String.format("%,.0f", it).replace(',', ' ')}" },
-                    style = WeGrowTextStyles.DisplayM,
-                    color = colors.textPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    AnimatedNumberText(
-                        targetValue = finalProfit,
-                        formatter = { "● ${strings.profitPrefix} $${String.format("%,.0f", it).replace(',', ' ')}" },
+
+                if (zakatResult.isAboveNisab) {
+                    Text(
+                        text = if (isUz) "Oylik zaxira tavsiyasi: ~$${String.format("%.2f", zakatResult.zakatMonthlyProvisionUsd)} / oy"
+                        else "Рекомендуемый ежемесячный резерв: ~$${String.format("%.2f", zakatResult.zakatMonthlyProvisionUsd)} / мес",
                         style = WeGrowTextStyles.CaptionStrong,
-                        color = colors.brandPrimary
-                    )
-                    AnimatedNumberText(
-                        targetValue = finalInvested,
-                        formatter = { "● ${strings.investedPrefix} $${String.format("%,.0f", it).replace(',', ' ')}" },
-                        style = WeGrowTextStyles.CaptionStrong,
-                        color = colors.chartSeries2
+                        color = colors.statusHalal
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                CompoundGrowthChart(
-                    totalSeries = totalSeries,
-                    investedSeries = investedSeries,
-                    years = yInt
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            if (zakatResult.zakatDueUsd > 0.0) {
+                WeGrowButton(
+                    text = if (isUz) "Zakot to'lovi uchun maqsad yaratish" else "Создать цель на выплату Закята",
+                    onClick = {
+                        val title = if (isUz) "Yillik Zakot 2027" else "Выплата Закята 2027"
+                        onCreateGoalFromCalc(
+                            title,
+                            zakatResult.zakatDueUsd.roundToInt().coerceAtLeast(10).toDouble(),
+                            zakatResult.zakatMonthlyProvisionUsd.coerceAtLeast(10.0)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-        }
+        } else {
+            // ---- COMPOUND / DIVIDENDS / FIRE WITHDRAWAL ----
+            val initialLabel = when (mode) {
+                2 -> if (isUz) "Boshlang'ich kapital" else "Стартовый капитал"
+                else -> strings.initialAmount
+            }
+            val monthlyLabel = when (mode) {
+                2 -> if (isUz) "Oylik yechib olish (FIRE)" else "Ежемесячное снятие (FIRE)"
+                else -> strings.monthlyTopUp
+            }
+            val yieldLabel = when (mode) {
+                1 -> if (isUz) "Dividend daromadliligi" else "Дивидендная доходность"
+                else -> strings.annualYield
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        WeGrowButton(
-            text = strings.createGoalForSum,
-            onClick = {
-                val title = if (strings.langCode == "uz") "Kapital ($yInt yil)" else "Капитал за $yInt лет"
-                onCreateGoalFromCalc(title, finalTotal.roundToInt().toDouble(), monthlyTopUp.toDouble())
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
+            CalculatorSliderItem(
+                label = initialLabel,
+                valueLabel = "$${initialAmount.roundToInt()}",
+                value = initialAmount,
+                valueRange = if (mode == 2) 5000f..250000f else 100f..50000f,
+                onValueChange = { raw ->
+                    val step = if (mode == 2) 1000f else 100f
+                    val maxR = if (mode == 2) 250000f else 50000f
+                    val minR = if (mode == 2) 5000f else 100f
+                    val snapped = ((raw / step).roundToInt() * step).coerceIn(minR, maxR)
+                    if (snapped != initialAmount) {
+                        initialAmount = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = monthlyLabel,
+                valueLabel = "$${monthlyTopUp.roundToInt()}",
+                value = monthlyTopUp,
+                valueRange = 50f..3000f,
+                onValueChange = { raw ->
+                    val snapped = ((raw / 50f).roundToInt() * 50f).coerceIn(50f, 3000f)
+                    if (snapped != monthlyTopUp) {
+                        monthlyTopUp = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = yieldLabel,
+                valueLabel = "${annualYield.roundToInt()}%",
+                value = annualYield,
+                valueRange = if (mode == 1) 1f..12f else 2f..25f,
+                onValueChange = { raw ->
+                    val maxY = if (mode == 1) 12f else 25f
+                    val minY = if (mode == 1) 1f else 2f
+                    val snapped = raw.roundToInt().toFloat().coerceIn(minY, maxY)
+                    if (snapped != annualYield) {
+                        annualYield = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+            CalculatorSliderItem(
+                label = strings.termYears,
+                valueLabel = "$yInt ${strings.yearsUnit}",
+                value = years,
+                valueRange = 1f..30f,
+                onValueChange = { raw ->
+                    val snapped = raw.roundToInt().toFloat().coerceIn(1f, 30f)
+                    if (snapped != years) {
+                        years = snapped
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            )
+
+            if (mode == 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = strings.capitalization, style = WeGrowTextStyles.LabelM, color = colors.textSecondary)
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(WeGrowRadius.md))
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.md))
+                        .padding(4.dp)
+                ) {
+                    listOf(strings.capMonthly, strings.capQuarterly, strings.capYearly).forEachIndexed { idx, title ->
+                        val sel = capIndex == idx
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .bouncyClickable(haptic = true) { capIndex = idx }
+                                .clip(RoundedCornerShape(WeGrowRadius.sm))
+                                .background(if (sel) colors.brandPrimary else Color.Transparent),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = title,
+                                style = WeGrowTextStyles.TitleS,
+                                color = if (sel) colors.textOnBrand else colors.textSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            StaggeredReveal(0) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(WeGrowRadius.xl))
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = when (mode) {
+                            1 -> if (isUz) "$yInt yildan keyin sof dividend / oy" else "Чистые дивиденды в месяц через $yInt лет"
+                            2 -> if (isUz) "$yInt yildan keyin qolgan kapital" else "Остаток капитала через $yInt лет"
+                            else -> "${strings.inYearsPrefix} $yInt ${strings.yearsUnit}"
+                        },
+                        style = WeGrowTextStyles.CaptionM,
+                        color = colors.textSecondary
+                    )
+                    AnimatedNumberText(
+                        targetValue = if (mode == 1) projection.monthlyPassiveIncome else projection.finalTotal,
+                        formatter = {
+                            if (mode == 1) "$${String.format("%,.0f", it).replace(',', ' ')} / ${if (isUz) "oy" else "мес"}"
+                            else "$${String.format("%,.0f", it).replace(',', ' ')}"
+                        },
+                        style = WeGrowTextStyles.DisplayM,
+                        color = colors.textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        when (mode) {
+                            1 -> {
+                                Text(
+                                    text = "● ${if (isUz) "Portfel" else "Портфель"} $${String.format("%,.0f", projection.finalTotal).replace(',', ' ')}",
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.brandPrimary
+                                )
+                                Text(
+                                    text = "● ${if (isUz) "Poklash/yil" else "Тазкия/год"} $${String.format("%.1f", projection.annualPurificationUsd)}",
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.saffron
+                                )
+                            }
+                            2 -> {
+                                Text(
+                                    text = "● ${if (isUz) "Yechib olindi" else "Снято всего"} $${String.format("%,.0f", projection.finalInvested).replace(',', ' ')}",
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.chartSeries2
+                                )
+                                Text(
+                                    text = "● 4% FIRE: $${String.format("%,.0f", projection.monthlyPassiveIncome).replace(',', ' ')}/м",
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.brandPrimary
+                                )
+                            }
+                            else -> {
+                                AnimatedNumberText(
+                                    targetValue = projection.finalProfit,
+                                    formatter = { "● ${strings.profitPrefix} $${String.format("%,.0f", it).replace(',', ' ')}" },
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.brandPrimary
+                                )
+                                AnimatedNumberText(
+                                    targetValue = projection.finalInvested,
+                                    formatter = { "● ${strings.investedPrefix} $${String.format("%,.0f", it).replace(',', ' ')}" },
+                                    style = WeGrowTextStyles.CaptionStrong,
+                                    color = colors.chartSeries2
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    CompoundGrowthChart(
+                        totalSeries = projection.totalSeries,
+                        investedSeries = projection.investedSeries,
+                        years = yInt
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            WeGrowButton(
+                text = strings.createGoalForSum,
+                onClick = {
+                    val title = if (isUz) "Kapital ($yInt yil)" else "Капитал за $yInt лет"
+                    onCreateGoalFromCalc(title, projection.finalTotal.roundToInt().coerceAtLeast(100).toDouble(), monthlyTopUp.toDouble())
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -2773,7 +3316,7 @@ private fun CalculatorSliderItem(
 }
 
 /**
- * Profile & Settings Screen with LivePulseDot tunnel status, theme & language switchers
+ * Profile & Settings Screen with navigation cards for all v4.1 sections
  */
 @Composable
 fun ProfileSettingsScreen(
@@ -2782,6 +3325,8 @@ fun ProfileSettingsScreen(
     online: Boolean,
     isDarkTheme: Boolean,
     isAuthenticated: Boolean = false,
+    ordersCount: Int = 0,
+    goldClubJoined: Boolean = false,
     strings: AppStrings,
     onUpdateServerUrl: (String) -> Unit,
     onSyncNow: () -> Unit,
@@ -2792,9 +3337,14 @@ fun ProfileSettingsScreen(
     onReplayOnboarding: () -> Unit,
     onOpenAuth: () -> Unit = {},
     onLogout: () -> Unit = {},
-    onOpenPortfolio: () -> Unit = {}
+    onOpenOrders: () -> Unit = {},
+    onOpenBrokers: () -> Unit = {},
+    onOpenMethodology: () -> Unit = {},
+    onOpenGoldClub: () -> Unit = {},
+    onOpenStreams: () -> Unit = {}
 ) {
     val colors = WeGrowTheme.colors
+    val isUz = strings.langCode == "uz"
     var urlInput by remember(serverUrl) { mutableStateOf(serverUrl) }
 
     Column(
@@ -2861,7 +3411,59 @@ fun ProfileSettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // WeGrow Services & Missing Pages Hub
         StaggeredReveal(1) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(WeGrowRadius.xl))
+                    .background(colors.surface)
+                    .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                    .padding(vertical = 6.dp)
+            ) {
+                ProfileMenuRow(
+                    icon = "🧾",
+                    title = strings.ordersHistoryTitle,
+                    subtitle = if (ordersCount > 0) "$ordersCount · Payme / Click" else "Payme / Click",
+                    onClick = onOpenOrders
+                )
+                ProfileMenuRow(
+                    icon = "🏦",
+                    title = strings.brokersTitle,
+                    subtitle = if (isUz) "IBKR, Freedom, Jett, Cash-hisob" else "IBKR, Freedom, Jett, Cash-счёт",
+                    onClick = onOpenBrokers
+                )
+                ProfileMenuRow(
+                    icon = "✦",
+                    title = strings.methodologyTitle,
+                    subtitle = if (isUz) "4 mezon, Tazkiya va Zakot" else "4 критерия, Тазкия и Закят",
+                    onClick = onOpenMethodology
+                )
+                ProfileMenuRow(
+                    icon = "👑",
+                    title = strings.goldClubTitle,
+                    subtitle = if (goldClubJoined) (if (isUz) "Obuna faol ✓" else "Подписка активна ✓") else (if (isUz) "Yopiq tahlil va g'oyalar" else "Закрытая аналитика и идеи"),
+                    onClick = onOpenGoldClub
+                )
+                ProfileMenuRow(
+                    icon = "▶",
+                    title = strings.streamsTitle,
+                    subtitle = if (isUz) "Jonli vebinarlar va yozuvlar" else "Вебинары и записи разборов",
+                    onClick = onOpenStreams
+                )
+                ProfileMenuRow(
+                    icon = "🧮",
+                    title = strings.calculatorsTitle,
+                    subtitle = if (isUz) "Murakkab %, Dividend, FIRE, Zakot" else "Сложный %, Дивиденды, FIRE, Закят",
+                    showDivider = false,
+                    onClick = onOpenCalculator
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        StaggeredReveal(2) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2909,7 +3511,7 @@ fun ProfileSettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        StaggeredReveal(2) {
+        StaggeredReveal(3) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2956,20 +3558,7 @@ fun ProfileSettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        WeGrowButton(
-            text = if (strings.langCode == "uz") "Investitsiya portfeli va poklash" else "Инвестиционный портфель и очищение",
-            onClick = onOpenPortfolio,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        WeGrowButton(
-            text = strings.calculatorsTitle,
-            onClick = onOpenCalculator,
-            outlined = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         WeGrowButton(
             text = strings.replayOnboardingBtn,
             onClick = onReplayOnboarding,
@@ -2978,3 +3567,43 @@ fun ProfileSettingsScreen(
         )
     }
 }
+
+@Composable
+private fun ProfileMenuRow(
+    icon: String,
+    title: String,
+    subtitle: String,
+    showDivider: Boolean = true,
+    onClick: () -> Unit
+) {
+    val colors = WeGrowTheme.colors
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .bouncyClickable(haptic = true, onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(WeGrowRadius.md))
+                    .background(colors.brandSoft),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = icon, fontSize = 17.sp, color = colors.brandPrimary)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = title, style = WeGrowTextStyles.TitleS, color = colors.textPrimary)
+                Text(text = subtitle, style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+            }
+            Text(text = "→", style = WeGrowTextStyles.TitleM, color = colors.textTertiary)
+        }
+        if (showDivider) {
+            HorizontalDivider(color = colors.border, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+}
+

@@ -31,15 +31,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import uz.wegrow.invest.data.CourseItem
 import uz.wegrow.invest.data.CourseLessonSummary
 import uz.wegrow.invest.data.LessonDetail
 import uz.wegrow.invest.data.PaymentOrderInfo
 import uz.wegrow.invest.ui.AppStrings
 import uz.wegrow.invest.ui.components.AnimatedProgressBar
+import uz.wegrow.invest.ui.components.CourseWaveformPreview
 import uz.wegrow.invest.ui.components.StaggeredReveal
 import uz.wegrow.invest.ui.components.WeGrowButton
 import uz.wegrow.invest.ui.components.WeGrowChip
+import uz.wegrow.invest.ui.components.WeGrowMarkdownText
+import uz.wegrow.invest.ui.components.WeGrowTopBar
 import uz.wegrow.invest.ui.components.bouncyClickable
 import uz.wegrow.invest.ui.theme.WeGrowRadius
 import uz.wegrow.invest.ui.theme.WeGrowTextStyles
@@ -56,7 +60,8 @@ fun CourseLmsScreen(
     onCloseLesson: () -> Unit,
     onCompleteLesson: (lessonId: Int, quizAnswers: Map<String, Int>?) -> Unit,
     onStartOrder: (provider: String) -> Unit,
-    onSandboxPay: (orderUid: String) -> Unit
+    onSandboxPay: (orderUid: String) -> Unit,
+    onOpenCertificate: () -> Unit = {}
 ) {
     if (activeLesson != null) {
         LessonReaderView(
@@ -70,6 +75,7 @@ fun CourseLmsScreen(
 
     val colors = WeGrowTheme.colors
     val isUz = strings.langCode == "uz"
+    var isPlayingPreview by remember { mutableStateOf(false) }
     val completedCount = lessons.count { it.completed }
     val progressFrac = if (lessons.isNotEmpty()) completedCount.toFloat() / lessons.size.toFloat() else 0f
 
@@ -80,6 +86,7 @@ fun CourseLmsScreen(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Unified Figcraft Course Hero Header (Rating + Author + Progress)
         item(key = "lms_header") {
             StaggeredReveal(0) {
                 Column(
@@ -88,20 +95,69 @@ fun CourseLmsScreen(
                         .clip(RoundedCornerShape(WeGrowRadius.xl))
                         .background(colors.surface)
                         .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
-                        .padding(18.dp)
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = if (isUz) course.levelUz else course.level,
-                        style = WeGrowTextStyles.CaptionStrong,
-                        color = colors.brandPrimary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(WeGrowRadius.full))
+                                .background(colors.brandSoft)
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = if (isUz) course.levelUz else course.level,
+                                style = WeGrowTextStyles.CaptionStrong,
+                                color = if (colors.isDark) colors.brandPrimary else colors.textPrimary
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "★ ", color = colors.saffron, fontSize = 15.sp)
+                            Text(text = "${course.rating}", style = WeGrowTextStyles.TitleS, color = colors.textPrimary)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "(${course.reviewsCount})", style = WeGrowTextStyles.CaptionM, color = colors.textTertiary)
+                        }
+                    }
+
                     Text(
                         text = if (isUz) course.titleUz else course.title,
-                        style = WeGrowTextStyles.TitleL,
+                        style = WeGrowTextStyles.HeadlineM,
                         color = colors.textPrimary
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(colors.brandSoft),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "WG",
+                                style = WeGrowTextStyles.CaptionStrong,
+                                color = if (colors.isDark) colors.brandPrimary else colors.textPrimary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isUz) course.authorUz else course.author,
+                                style = WeGrowTextStyles.TitleS,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = if (isUz) course.authorRoleUz else course.authorRole,
+                                style = WeGrowTextStyles.CaptionM,
+                                color = colors.textSecondary
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -117,11 +173,82 @@ fun CourseLmsScreen(
                             color = colors.brandPrimary
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
                     AnimatedProgressBar(
                         fraction = progressFrac,
                         barColor = colors.brandPrimary,
                         trackColor = colors.surfaceMuted
+                    )
+                }
+            }
+        }
+
+        // Restored Figcraft Audio/Video Waveform Preview Card
+        item(key = "lms_waveform_preview") {
+            StaggeredReveal(1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(86.dp)
+                        .bouncyClickable(haptic = true) { isPlayingPreview = !isPlayingPreview }
+                        .clip(RoundedCornerShape(WeGrowRadius.xl))
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(colors.brandPrimary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isPlayingPreview) "❚❚" else "▶",
+                            color = colors.textOnBrand,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = strings.coursePreview, style = WeGrowTextStyles.TitleM, color = colors.textPrimary)
+                        Text(text = course.previewDuration, style = WeGrowTextStyles.CaptionM, color = colors.textSecondary)
+                    }
+                    CourseWaveformPreview(
+                        isPlaying = isPlayingPreview,
+                        barColor = colors.textTertiary,
+                        activeColor = colors.brandPrimary
+                    )
+                }
+            }
+        }
+
+        // Restored 3 Figcraft Stat Tiles (Certificate tile opens CertificateScreen!)
+        item(key = "lms_stats") {
+            StaggeredReveal(2) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LmsStatTile(
+                        icon = "📚",
+                        title = if (isUz) "${course.modulesCount} modul" else "${course.modulesCount} модулей",
+                        caption = if (isUz) "${lessons.size} faol dars" else "${lessons.size} уроков",
+                        modifier = Modifier.weight(1f)
+                    )
+                    LmsStatTile(
+                        icon = "🕒",
+                        title = if (isUz) course.accessDurationUz else course.accessDuration,
+                        caption = if (isUz) "kirish huquqi" else "доступ",
+                        modifier = Modifier.weight(1f)
+                    )
+                    LmsStatTile(
+                        icon = "🏅",
+                        title = if (isUz) "Sertifikat" else "Сертификат",
+                        caption = if (isUz) "ochish →" else "открыть →",
+                        highlighted = true,
+                        onClick = onOpenCertificate,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -186,11 +313,23 @@ fun CourseLmsScreen(
         }
 
         item(key = "lms_lessons_title") {
-            Text(
-                text = if (isUz) "Kurs darslari" else "Уроки курса",
-                style = WeGrowTextStyles.TitleL,
-                color = colors.textPrimary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isUz) "Kurs darslari" else "Уроки курса",
+                    style = WeGrowTextStyles.TitleL,
+                    color = colors.textPrimary
+                )
+                Text(
+                    text = if (isUz) "Sertifikat 🏅" else "Сертификат 🏅",
+                    style = WeGrowTextStyles.LabelM,
+                    color = colors.brandPrimary,
+                    modifier = Modifier.bouncyClickable(haptic = true, onClick = onOpenCertificate)
+                )
+            }
         }
 
         items(lessons, key = { "les_${it.id}" }) { lesson ->
@@ -253,6 +392,42 @@ fun CourseLmsScreen(
 }
 
 @Composable
+private fun LmsStatTile(
+    icon: String,
+    title: String,
+    caption: String,
+    highlighted: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val colors = WeGrowTheme.colors
+    Column(
+        modifier = modifier
+            .height(86.dp)
+            .then(if (onClick != null) Modifier.bouncyClickable(haptic = true, onClick = onClick) else Modifier)
+            .clip(RoundedCornerShape(WeGrowRadius.lg))
+            .background(if (highlighted) colors.brandSoft else colors.surface)
+            .border(
+                1.dp,
+                if (highlighted) colors.brandPrimary.copy(alpha = 0.6f) else colors.border,
+                RoundedCornerShape(WeGrowRadius.lg)
+            )
+            .padding(12.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = icon, fontSize = 18.sp)
+        Column {
+            Text(text = title, style = WeGrowTextStyles.TitleS, color = colors.textPrimary)
+            Text(
+                text = caption,
+                style = WeGrowTextStyles.CaptionM,
+                color = if (highlighted) colors.brandPrimary else colors.textTertiary
+            )
+        }
+    }
+}
+
+@Composable
 private fun LessonReaderView(
     lesson: LessonDetail,
     strings: AppStrings,
@@ -272,29 +447,10 @@ private fun LessonReaderView(
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .bouncyClickable(haptic = true, onClick = onBack)
-                    .clip(CircleShape)
-                    .background(colors.surface)
-                    .border(1.dp, colors.border, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
-            }
-            Text(
-                text = if (isUz) lesson.titleUz else lesson.title,
-                style = WeGrowTextStyles.TitleM,
-                color = colors.textPrimary,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        WeGrowTopBar(
+            title = if (isUz) lesson.titleUz else lesson.title,
+            onBack = onBack
+        )
 
         Column(
             modifier = Modifier
@@ -305,11 +461,7 @@ private fun LessonReaderView(
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = if (isUz) lesson.contentMdUz else lesson.contentMd,
-                style = WeGrowTextStyles.BodyS,
-                color = colors.textPrimary
-            )
+            WeGrowMarkdownText(markdown = if (isUz) lesson.contentMdUz else lesson.contentMd)
         }
 
         if (lesson.quiz.isNotEmpty()) {

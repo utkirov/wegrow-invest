@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.rate_limit import SecurityAndRateLimitMiddleware
 from app.db.seed import seed_all
-from app.routers import admin, auth, core_api, lms, market, payments, portfolio
+from app.routers import admin, auth, content, core_api, lms, market, payments, portfolio
 
 
 @asynccontextmanager
@@ -20,8 +20,8 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
         description=(
-            "Production-ready Backend API for WeGrow Invest v4.0 "
-            "(OTP/JWT Auth, 100+ US Equities, AAOIFI Sharia Screening, Portfolio, LMS, Payments & Admin CMS)"
+            "Production-ready Backend API for WeGrow Invest v4.1 "
+            "(OTP/JWT Auth, 105 US Equities, AAOIFI Sharia Screening, Portfolio, LMS, Payments, Content & Admin CMS)"
         ),
         version=settings.app_version,
         lifespan=lifespan,
@@ -38,6 +38,7 @@ def create_app() -> FastAPI:
 
     application.include_router(admin.router)
     application.include_router(auth.router)
+    application.include_router(content.router)
     application.include_router(market.router)
     application.include_router(portfolio.router)
     application.include_router(lms.router)

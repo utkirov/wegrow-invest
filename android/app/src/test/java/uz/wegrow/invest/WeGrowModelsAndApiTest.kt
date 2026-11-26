@@ -251,4 +251,76 @@ class WeGrowModelsAndApiTest {
         assertEquals("PAYME", order.provider)
         assertEquals(1290000, order.amountUzs)
     }
+
+    @Test
+    fun zakatCalculatorEngine_checksNisabAndDebtDeduction() {
+        val below = uz.wegrow.invest.data.ZakatCalculatorEngine.calculate(
+            cashUsd = 2000.0,
+            halalStocksUsd = 3000.0,
+            goldAndCryptoUsd = 500.0,
+            shortTermDebtUsd = 1000.0,
+            nisabUsd = 7200.0
+        )
+        assertEquals(false, below.isAboveNisab)
+        assertEquals(0.0, below.zakatDueUsd, 0.001)
+
+        val above = uz.wegrow.invest.data.ZakatCalculatorEngine.calculate(
+            cashUsd = 4000.0,
+            halalStocksUsd = 8000.0,
+            goldAndCryptoUsd = 2000.0,
+            shortTermDebtUsd = 4000.0,
+            nisabUsd = 7200.0
+        )
+        assertTrue(above.isAboveNisab)
+        assertEquals(10000.0, above.netZakatableUsd, 0.001)
+        assertEquals(250.0, above.zakatDueUsd, 0.001)
+    }
+
+    @Test
+    fun financialCalculatorEngine_computesCompoundDividendAndFireModes() {
+        val compound = uz.wegrow.invest.data.FinancialCalculatorEngine.compute(
+            mode = 0, initialAmount = 1000.0, monthlyTopUp = 200.0, annualYieldPct = 8.0, years = 10, periodsPerYear = 12
+        )
+        assertTrue(compound.finalTotal > compound.finalInvested)
+        assertEquals(11, compound.totalSeries.size)
+
+        val dividend = uz.wegrow.invest.data.FinancialCalculatorEngine.compute(
+            mode = 1, initialAmount = 10000.0, monthlyTopUp = 200.0, annualYieldPct = 4.0, years = 5, periodsPerYear = 4
+        )
+        assertTrue(dividend.annualPassiveIncome > 0.0)
+        assertTrue(dividend.annualPurificationUsd > 0.0)
+
+        val fire = uz.wegrow.invest.data.FinancialCalculatorEngine.compute(
+            mode = 2, initialAmount = 100000.0, monthlyTopUp = 300.0, annualYieldPct = 8.0, years = 10, periodsPerYear = 12
+        )
+        assertTrue(fire.finalTotal > 100000.0)
+        assertEquals(36000.0, fire.finalInvested, 1.0)
+    }
+
+    @Test
+    fun parseV41ContentAndOrdersJson_decodesOrdersStoriesBrokersStreams() {
+        val rawOrders = """
+            {"orders":[{"order_uid":"WG-999","course_id":1,"course_title":"Курс США","course_title_uz":"AQSh kursi","provider":"CLICK","amount_uzs":1290000,"status":"PAID","checkout_url":"https://my.click.uz"}]}
+        """.trimIndent()
+        val orders = WeGrowApiClient.parseOrdersListJson(rawOrders)
+        assertNotNull(orders)
+        assertEquals(1, orders!!.size)
+        assertEquals("Курс США", orders.first().courseTitle)
+        assertEquals("PAID", orders.first().status)
+
+        val rawBrokers = """
+            {"brokers":[{"id":"ibkr","name":"IBKR","badge":"Top","badge_uz":"Top","jurisdiction":"US","min_deposit":"$0","commission":"$0.35","us_stocks":true,"halal_cash_account":true,"uz_card_funding":false,"funding_methods":"SWIFT","funding_methods_uz":"SWIFT","halal_note":"Cash","halal_note_uz":"Cash","pros":["SIPC"],"pros_uz":["SIPC"],"cons":["SWIFT"],"cons_uz":["SWIFT"],"rating":4.9}]}
+        """.trimIndent()
+        val brokers = WeGrowApiClient.parseBrokersJson(rawBrokers)
+        assertNotNull(brokers)
+        assertEquals("IBKR", brokers!!.first().name)
+        assertTrue(brokers.first().usStocks)
+
+        val rawStreams = """
+            {"streams":[{"id":1,"title":"Эфир","title_uz":"Efir","speaker":"CFA","speaker_role":"Analyst","speaker_role_uz":"Tahlilchi","date_label":"LIVE","date_label_uz":"LIVE","duration_min":50,"status":"LIVE","is_gold_club":false,"topic_tag":"Halal","topic_tag_uz":"Halol"}]}
+        """.trimIndent()
+        val streams = WeGrowApiClient.parseStreamsJson(rawStreams)
+        assertNotNull(streams)
+        assertEquals("LIVE", streams!!.first().status)
+    }
 }
