@@ -273,9 +273,66 @@ object WeGrowRepository {
         )
 
         val news = listOf(
-            NewsItem(1, "NVIDIA обновила рекорд выручки в сегменте ИИ-чипов за III квартал", "NVIDIA III chorakda AI-chiplar segmentida rekord daromad ko'rsatdi", "Рынок США · 25 мин назад", "AQSh bozori · 25 daqiqa oldin", "NVDA", "Халяль"),
-            NewsItem(2, "Итоги квартального пересмотра халяль-статусов индекса S&P 500 по методике WeGrow", "WeGrow metodikasi bo'yicha S&P 500 halol maqomlari choraklik sharhi", "Аналитика WeGrow · 2 ч назад", "WeGrow tahlili · 2 soat oldin", "AAPL", "Методика"),
-            NewsItem(3, "Apple расширяет линейку чипов M4 и сохраняет долговую нагрузку ниже 10%", "Apple M4 chiplarini kengaytirmoqda va qarz yukini 10% dan past saqlamoqda", "Технологии · 4 ч назад", "Texnologiyalar · 4 soat oldin", "AAPL", "Отчётность")
+            NewsItem(
+                id = 1,
+                title = "NVIDIA обновила рекорд выручки в сегменте ИИ-чипов за III квартал",
+                titleUz = "NVIDIA III chorakda AI-chiplar segmentida rekord daromad ko'rsatdi",
+                source = "Рынок США · 25 мин назад",
+                sourceUz = "AQSh bozori · 25 daqiqa oldin",
+                ticker = "NVDA",
+                tag = "Халяль",
+                summary = "Выручка дата-центров выросла на 87% при долговой нагрузке всего 3,1% — бумага уверенно держит статус Халяль по AAOIFI.",
+                summaryUz = "Data-markaz tushumi 87% ga oshdi, qarz yuki atigi 3,1% — aksiya AAOIFI bo'yicha Halol maqomini saqladi.",
+                body = "## Ключевые итоги квартала\nNVIDIA отчиталась о рекордном спросе на ускорители Blackwell со стороны облачных провайдеров. Сегмент дата-центров сформировал **87% всей выручки**.\n\n## Проверка AAOIFI\n- **Долговая нагрузка:** 3,1% (лимит 30%).\n- **Процентные депозиты:** 8,4% (лимит 30%).\n- **Недопустимый доход:** 0,3% (лимит 5%).",
+                bodyUz = "## Chorakning asosiy natijalari\nNVIDIA bulut provayderlaridan Blackwell tezlatkichlariga rekord talab haqida hisobot berdi. Data-markazlar segmenti **tushumning 87% ini** tashkil etdi.\n\n## AAOIFI tekshiruvi\n- **Qarz yuki:** 3,1% (limit 30%).\n- **Foizli depozitlar:** 8,4% (limit 30%).\n- **Nomaqbul daromad:** 0,3% (limit 5%).",
+                readMin = 3,
+                publishedAt = "26.11.2026"
+            ),
+            NewsItem(
+                id = 2,
+                title = "Итоги квартального пересмотра 105 компаний S&P 500 по методике AAOIFI",
+                titleUz = "AAOIFI metodikasi bo'yicha S&P 500 105 kompaniyasi choraklik sharhi",
+                source = "Аналитика WeGrow · 2 ч назад",
+                sourceUz = "WeGrow tahlili · 2 soat oldin",
+                ticker = "AAPL",
+                tag = "Методика",
+                summary = "82 из 105 крупнейших акций США прошли все 4 критерия AAOIFI; 3 компании находятся в пограничном статусе «Сомнительно».",
+                summaryUz = "AQShning 105 yirik aksiyasidan 82 tasi barcha 4 AAOIFI mezonidan o'tdi; 3 tasi «Shubhali» maqomida.",
+                body = "## Результаты аудита WeGrow\nКоманда шариатских аналитиков обновила коэффициенты 105 бумаг:\n- **82 акции — Халяль**\n- **3 акции — Сомнительно** (AMZN, WMT, SPOT)\n- **20 акций — Не халяль**\n\n> Проверьте вкладку **Портфель**, чтобы увидеть статус ваших позиций и расчёт очищения дивидендов.",
+                bodyUz = "## WeGrow auditi natijalari\nShariat tahlilchilari 105 ta aksiyaning ko'rsatkichlarini yangiladi:\n- **82 ta aksiya — Halol**\n- **3 ta aksiya — Shubhali** (AMZN, WMT, SPOT)\n- **20 ta aksiya — Halol emas**\n\n> Pozitsiyalaringiz maqomini ko'rish uchun **Portfel** bo'limini tekshiring.",
+                readMin = 4,
+                publishedAt = "26.11.2026"
+            ),
+            NewsItem(
+                id = 3,
+                title = "Apple расширяет линейку чипов M4 и сохраняет долговую нагрузку ниже 10%",
+                titleUz = "Apple M4 chiplarini kengaytirmoqda va qarz yukini 10% dan past saqlamoqda",
+                source = "Технологии · 4 ч назад",
+                sourceUz = "Texnologiyalar · 4 soat oldin",
+                ticker = "AAPL",
+                tag = "Отчётность",
+                summary = "Сервисы приносят 26% выручки Apple, а долговая нагрузка остаётся на комфортном уровне 9,8%.",
+                summaryUz = "Servislar Apple tushumining 26% ini keltirmoqda, qarz yuki esa 9,8% darajasida.",
+                body = "## Драйверы роста\nОбновление линейки Mac на чипах M4 и стабильный рост App Store / iCloud поддерживают высокую маржинальность.\n\n## Очищение дивидендов\nПри доле недопустимого дохода **0,9%** сумма очищения составляет ~$0,002 на акцию за квартал.",
+                bodyUz = "## O'sish omillari\nM4 chipli Mac liniyasi va App Store / iCloud o'sishi yuqori rentabellikni saqlamoqda.\n\n## Dividend poklash\n**0,9%** nomaqbul daromad ulushi bilan har chorakda aksiya boshiga ~$0,002 xayriyaga ajratiladi.",
+                readMin = 3,
+                publishedAt = "25.11.2026"
+            ),
+            NewsItem(
+                id = 4,
+                title = "Как инвестору из Узбекистана оформить форму W-8BEN и выбрать халяль-счёт",
+                titleUz = "O'zbekistonlik investor W-8BEN shaklini qanday to'ldiradi va halol hisob tanlaydi",
+                source = "Гид WeGrow · 1 день назад",
+                sourceUz = "WeGrow qo'llanmasi · 1 kun oldin",
+                ticker = "MSFT",
+                tag = "Рынок",
+                summary = "Пошаговый чек-лист по отключению маржинального плеча, подписанию W-8BEN и учёту дивидендов.",
+                summaryUz = "Marjinal yelkani o'chirish, W-8BEN imzolash va dividendlarni hisobga olish bo'yicha chek-list.",
+                body = "## Чек-лист инвестора\n1. Используйте только **Cash-счёт** без маржинального плеча.\n2. Подпишите **W-8BEN** в личном кабинете брокера.\n3. Регулярно проводите очищение дивидендов в разделе **Портфель**.",
+                bodyUz = "## Investor chek-listi\n1. Faqat marjinal yelkasiz **Cash-hisob** dan foydalaning.\n2. Broker kabinetida **W-8BEN** shaklini imzolang.\n3. **Portfel** bo'limida dividendlarni muntazam poklab boring.",
+                readMin = 5,
+                publishedAt = "24.11.2026"
+            )
         )
 
         val indices = listOf(
@@ -287,12 +344,12 @@ object WeGrowRepository {
         val heatmap = listOf(
             SectorHeatTile("Технологии", "Texnologiyalar", "+2,14%", "UP_3", 2.2f),
             SectorHeatTile("Коммуникации", "Kommunikatsiya", "+1,12%", "UP_2", 1.6f),
-            SectorHeatTile("Здравоохр.", "Sog'liqni saqlash", "+0,95%", "UP_2", 1.4f),
-            SectorHeatTile("Пром.", "Sanoat", "+0,34%", "UP_1", 1.1f),
+            SectorHeatTile("Здравоохранение", "Sog'liqni saqlash", "+0,95%", "UP_2", 1.4f),
+            SectorHeatTile("Промышленность", "Sanoat", "+0,34%", "UP_1", 1.1f),
             SectorHeatTile("Потребление", "Iste'mol", "+0,41%", "UP_1", 1.3f),
             SectorHeatTile("Сырьё", "Xomashyo", "-0,28%", "DOWN_1", 0.9f),
             SectorHeatTile("Энергетика", "Energetika", "-0,86%", "DOWN_2", 1.0f),
-            SectorHeatTile("Недвиж.", "Ko'chmas mulk", "+0,19%", "UP_1", 1.0f)
+            SectorHeatTile("Недвижимость", "Ko'chmas mulk", "+0,19%", "UP_1", 1.0f)
         )
 
         return BootstrapPayload(
@@ -308,6 +365,265 @@ object WeGrowRepository {
             online = false
         )
     }
+
+    fun defaultStories(): List<StoryDeck> = listOf(
+        StoryDeck(
+            id = "story_halal_audit",
+            label = "Халяль",
+            labelUz = "Halol",
+            badgeSymbol = "✦",
+            slides = listOf(
+                StorySlide(
+                    eyebrow = "Аудит Q3 2026",
+                    eyebrowUz = "Q3 2026 auditi",
+                    title = "82 из 105 акций США признаны Халяль",
+                    titleUz = "AQShning 105 aksiyasidan 82 tasi Halol",
+                    body = "Обновлённый скрининг AAOIFI №21: отрасль, долговая нагрузка < 30%, процентные депозиты < 30% и недопустимый доход < 5%.",
+                    bodyUz = "Yangilangan AAOIFI №21 skriningi: soha, qarz yuki < 30%, foizli depozitlar < 30% va nomaqbul tushum < 5%.",
+                    ctaLabel = "Открыть методику AAOIFI",
+                    ctaLabelUz = "AAOIFI metodikasini ochish",
+                    actionRoute = "METHODOLOGY"
+                ),
+                StorySlide(
+                    eyebrow = "Тазкия дивидендов",
+                    eyebrowUz = "Dividend poklash",
+                    title = "Авторасчёт очищения в Портфеле",
+                    titleUz = "Portfelda avtomatik poklash hisobi",
+                    body = "Добавьте купленные акции в Портфель — WeGrow рассчитает точную сумму очищения на благотворительность.",
+                    bodyUz = "Sotib olingan aksiyalarni Portfelga qo'shing — WeGrow xayriyaga ajratiladigan aniq summani hisoblaydi.",
+                    ctaLabel = "Открыть Портфель",
+                    ctaLabelUz = "Portfelni ochish",
+                    actionRoute = "PORTFOLIO"
+                )
+            )
+        ),
+        StoryDeck(
+            id = "story_news",
+            label = "Новости",
+            labelUz = "Yangiliklar",
+            badgeSymbol = "📰",
+            slides = listOf(
+                StorySlide(
+                    eyebrow = "Дайджест рынка",
+                    eyebrowUz = "Bozor dayjesti",
+                    title = "NVIDIA, Apple и Eli Lilly обновляют максимумы",
+                    titleUz = "NVIDIA, Apple va Eli Lilly rekord o'rnatmoqda",
+                    body = "Читайте свежие разборы квартальных отчётов и шариатские комментарии аналитиков WeGrow.",
+                    bodyUz = "Choraklik hisobotlar tahlili va WeGrow shariat sharhlarini o'qing.",
+                    ctaLabel = "Перейти к новостям",
+                    ctaLabelUz = "Yangiliklarga o'tish",
+                    actionRoute = "NEWS_FEED"
+                )
+            )
+        ),
+        StoryDeck(
+            id = "story_courses",
+            label = "Курсы",
+            labelUz = "Kurslar",
+            badgeSymbol = "🎓",
+            slides = listOf(
+                StorySlide(
+                    eyebrow = "WeGrow Academy",
+                    eyebrowUz = "WeGrow Academy",
+                    title = "8 модулей практики + именной сертификат",
+                    titleUz = "8 amaliy modul + shaxsiy sertifikat",
+                    body = "От выбора брокера в Узбекистане до сборки халяль-портфеля, квизов и расчёта Закята.",
+                    bodyUz = "O'zbekistonda broker tanlashdan halol portfel yig'ish, testlar va Zakot hisoblashgacha.",
+                    ctaLabel = "Открыть обучение",
+                    ctaLabelUz = "Kursni ochish",
+                    actionRoute = "COURSES"
+                )
+            )
+        ),
+        StoryDeck(
+            id = "story_gold_club",
+            label = "Gold Club",
+            labelUz = "Gold Club",
+            badgeSymbol = "👑",
+            slides = listOf(
+                StorySlide(
+                    eyebrow = "Премиум-клуб",
+                    eyebrowUz = "Premium klub",
+                    title = "WeGrow Gold Club для системных инвесторов",
+                    titleUz = "Tizimli investorlar uchun WeGrow Gold Club",
+                    body = "Еженедельные инвест-идеи, ранний доступ к аудиту AAOIFI и закрытые разборы с аналитиками.",
+                    bodyUz = "Haftalik invest-g'oyalar, AAOIFI auditiga erta kirish va tahlilchilar bilan yopiq tahlillar.",
+                    ctaLabel = "Подробнее о Gold Club",
+                    ctaLabelUz = "Gold Club haqida",
+                    actionRoute = "GOLD_CLUB"
+                )
+            )
+        ),
+        StoryDeck(
+            id = "story_streams",
+            label = "Эфиры",
+            labelUz = "Efirlar",
+            badgeSymbol = "▶",
+            slides = listOf(
+                StorySlide(
+                    eyebrow = "Прямые эфиры",
+                    eyebrowUz = "Jonli efirlar",
+                    title = "Разбор халяль-портфеля на $10 000 в прямом эфире",
+                    titleUz = "Jonli efirda $10 000 lik halol portfel tahlili",
+                    body = "Присоединяйтесь к прямым вебинарам аналитиков или смотрите записи в удобное время.",
+                    bodyUz = "Tahlilchilarning jonli vebinarlariga qo'shiling yoki yozuvlarni qulay vaqtda ko'ring.",
+                    ctaLabel = "Расписание эфиров",
+                    ctaLabelUz = "Efirlar jadvali",
+                    actionRoute = "STREAMS"
+                )
+            )
+        )
+    )
+
+    fun defaultBrokers(): List<BrokerInfo> = listOf(
+        BrokerInfo(
+            id = "ibkr",
+            name = "Interactive Brokers (IBKR)",
+            badge = "Выбор для долгосрока",
+            badgeUz = "Uzoq muddat uchun tanlov",
+            jurisdiction = "США · SEC / FINRA / SIPC ($500K)",
+            minDeposit = "$0",
+            commission = "от $0,35 (Tiered)",
+            usStocks = true,
+            halalCashAccount = true,
+            uzCardFunding = false,
+            fundingMethods = "SWIFT из банков УЗ (Kapitalbank, Ipak Yo'li, TBC)",
+            fundingMethodsUz = "O'zbekiston banklaridan SWIFT (Kapitalbank, Ipak Yo'li, TBC)",
+            halalNote = "Выберите тип счёта «Cash» (без плеча) и отключите программу кредитования акций.",
+            halalNoteUz = "«Cash» hisob turini tanlang (yelkasiz) va aksiyalarni qarzga berishni o'chiring.",
+            pros = listOf("Защита SIPC до $500 000", "Минимальные комиссии на NASDAQ/NYSE", "Дробные акции S&P 500"),
+            prosUz = listOf("$500 000 gacha SIPC himoyasi", "NASDAQ/NYSE minimal komissiya", "Kasr aksiyalar"),
+            cons = listOf("Пополнение через SWIFT", "Сложный интерфейс для новичка"),
+            consUz = listOf("SWIFT orqali to'ldirish", "Yangi boshlovchilar uchun murakkab interfeys"),
+            rating = 4.9
+        ),
+        BrokerInfo(
+            id = "freedom",
+            name = "Freedom Finance Global",
+            badge = "Удобный старт из УЗ",
+            badgeUz = "O'zbekistondan qulay start",
+            jurisdiction = "МФЦА (Астана) · AFSA",
+            minDeposit = "$0",
+            commission = "$0,02 / акция + $2",
+            usStocks = true,
+            halalCashAccount = true,
+            uzCardFunding = true,
+            fundingMethods = "Visa/Mastercard банков УЗ, SWIFT-перевод",
+            fundingMethodsUz = "O'zbekiston banklari Visa/Mastercard, SWIFT",
+            halalNote = "Отключите маржинальную торговлю и D-счёт (своп-проценты) в настройках.",
+            halalNoteUz = "Sozlamalarda marjinal savdo va D-hisob foizlarini o'chiring.",
+            pros = listOf("Открытие по паспорту УЗ", "Поддержка RU/UZ", "Пополнение картой Visa/Mastercard"),
+            prosUz = listOf("O'zbekiston pasporti bilan ochish", "RU/UZ qo'llab-quvvatlash", "Visa/Mastercard to'ldirish"),
+            cons = listOf("Комиссия выше IBKR на малых чеках", "Нужно отключить D-счёт вручную"),
+            consUz = listOf("Kichik summalarda komissiya yuqoriroq", "D-hisobni qo'lda o'chirish kerak"),
+            rating = 4.7
+        ),
+        BrokerInfo(
+            id = "jett",
+            name = "Jett / Инвестиции в УЗ",
+            badge = "Локальный рынок УЗ",
+            badgeUz = "O'zbekiston lokal bozori",
+            jurisdiction = "Узбекистан · НАПП (РФБ «Тошкент»)",
+            minDeposit = "100 000 сум",
+            commission = "от 0,5% за сделку",
+            usStocks = false,
+            halalCashAccount = true,
+            uzCardFunding = true,
+            fundingMethods = "Uzcard / Humo через приложения банков",
+            fundingMethodsUz = "Bank ilovalari orqali Uzcard / Humo",
+            halalNote = "Для локальных бумаг Узбекистана проверяйте деятельность эмитента на отсутствие риба.",
+            halalNoteUz = "Mahalliy qog'ozlar uchun emitent faoliyatini ribodan xoliligini tekshiring.",
+            pros = listOf("Пополнение в сумах (Uzcard/Humo)", "Юрисдикция Узбекистана", "Верификация через MyID"),
+            prosUz = listOf("So'mda to'ldirish (Uzcard/Humo)", "O'zbekiston yurisdiktsiyasi", "MyID tasdiqlash"),
+            cons = listOf("Нет акций США (NASDAQ/NYSE)", "Ограниченная ликвидность"),
+            consUz = listOf("AQSh aksiyalari yo'q", "Cheklangan likvidlik"),
+            rating = 4.5
+        ),
+        BrokerInfo(
+            id = "tabadul_global",
+            name = "Исламский брокер (Шарья-счёт)",
+            badge = "100% без риба",
+            badgeUz = "100% ribosiz",
+            jurisdiction = "Международные партнёры · AAOIFI",
+            minDeposit = "$100",
+            commission = "0,25% (мин. $1)",
+            usStocks = true,
+            halalCashAccount = true,
+            uzCardFunding = true,
+            fundingMethods = "Международные карты Visa/Mastercard, SWIFT",
+            fundingMethodsUz = "Xalqaro Visa/Mastercard, SWIFT",
+            halalNote = "Нативный Cash-счёт без овернайт-свопов, кредитного плеча и автокредитования акций.",
+            halalNoteUz = "Overnayt-svop, kredit yelkasi va aksiyalarni qarzga berishsiz tabiiy Cash-hisob.",
+            pros = listOf("Нет скрытых процентов", "Встроенный халяль-фильтр", "Удобный отчёт по Закяту"),
+            prosUz = listOf("Yashirin foizlar yo'q", "O'rnatilgan halol filtr", "Zakot uchun qulay hisobot"),
+            cons = listOf("Меньше тикеров, чем в IBKR", "Комиссия за ввод картой 1–2%"),
+            consUz = listOf("IBKR dan kamroq tiker", "Karta komissiyasi 1–2%"),
+            rating = 4.8
+        )
+    )
+
+    fun defaultStreams(): List<StreamSession> = listOf(
+        StreamSession(
+            id = 1,
+            title = "Итоги Q3 2026: Топ-10 халяльных акций США перед новым годом",
+            titleUz = "Q3 2026 yakunlari: Yangi yil oldidan AQShning Top-10 halol aksiyalari",
+            speaker = "Тимур Рахимов, CFA",
+            speakerRole = "Ведущий аналитик WeGrow",
+            speakerRoleUz = "WeGrow yetakchi tahlilchisi",
+            dateLabel = "Сейчас в эфире · LIVE",
+            dateLabelUz = "Hozir efirda · LIVE",
+            durationMin = 55,
+            status = "LIVE",
+            isGoldClub = false,
+            topicTag = "Халяль-аудит",
+            topicTagUz = "Halol-audit"
+        ),
+        StreamSession(
+            id = 2,
+            title = "Как собрать портфель на $10 000 и рассчитать Закят с акций",
+            titleUz = "$10 000 lik portfel yig'ish va aksiyalardan Zakot hisoblash",
+            speaker = "Сардор Усманов",
+            speakerRole = "Шариатский консультант AAOIFI",
+            speakerRoleUz = "AAOIFI shariat maslahatchisi",
+            dateLabel = "29 ноября · 20:00 (Ташкент)",
+            dateLabelUz = "29-noyabr · 20:00 (Toshkent)",
+            durationMin = 60,
+            status = "UPCOMING",
+            isGoldClub = false,
+            topicTag = "Закят и Тазкия",
+            topicTagUz = "Zakot va Tazkiya"
+        ),
+        StreamSession(
+            id = 3,
+            title = "Закрытый разбор полупроводников: NVDA, AVGO, AMD и TSMC",
+            titleUz = "Yarimo'tkazgichlar yopiq tahlili: NVDA, AVGO, AMD va TSMC",
+            speaker = "Команда WeGrow Research",
+            speakerRole = "Gold Club Analyst Desk",
+            speakerRoleUz = "Gold Club tahlil markazi",
+            dateLabel = "3 декабря · 20:30 (Ташкент)",
+            dateLabelUz = "3-dekabr · 20:30 (Toshkent)",
+            durationMin = 75,
+            status = "UPCOMING",
+            isGoldClub = true,
+            topicTag = "Gold Club",
+            topicTagUz = "Gold Club"
+        ),
+        StreamSession(
+            id = 4,
+            title = "Запись: Пополнение IBKR из Узбекистана и заполнение W-8BEN",
+            titleUz = "Yozuv: O'zbekistondan IBKR ni to'ldirish va W-8BEN to'ldirish",
+            speaker = "Азиза Каримова",
+            speakerRole = "Эксперт по международным брокерам",
+            speakerRoleUz = "Xalqaro brokerlar eksperti",
+            dateLabel = "Запись · 18 ноября",
+            dateLabelUz = "Yozuv · 18-noyabr",
+            durationMin = 42,
+            status = "RECORDED",
+            isGoldClub = false,
+            topicTag = "Брокеры",
+            topicTagUz = "Brokerlar"
+        )
+    )
 
     suspend fun fetchBootstrap(baseUrl: String): BootstrapPayload = withContext(Dispatchers.IO) {
         try {

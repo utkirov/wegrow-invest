@@ -30,10 +30,21 @@ import uz.wegrow.invest.ui.StringsRu
 import uz.wegrow.invest.ui.StringsUz
 import uz.wegrow.invest.ui.WeGrowViewModel
 import uz.wegrow.invest.ui.components.WeGrowFloatingNavBar
+import uz.wegrow.invest.ui.components.WeGrowToastBanner
 import uz.wegrow.invest.ui.screens.*
 import uz.wegrow.invest.ui.screens.auth.AuthScreen
+import uz.wegrow.invest.ui.screens.brokers.BrokersScreen
+import uz.wegrow.invest.ui.screens.community.GoldClubScreen
+import uz.wegrow.invest.ui.screens.community.StoriesViewerOverlay
+import uz.wegrow.invest.ui.screens.community.StreamsScreen
+import uz.wegrow.invest.ui.screens.courses.CertificateScreen
 import uz.wegrow.invest.ui.screens.courses.CourseLmsScreen
+import uz.wegrow.invest.ui.screens.news.NewsDetailScreen
+import uz.wegrow.invest.ui.screens.news.NewsFeedScreen
+import uz.wegrow.invest.ui.screens.notifications.NotificationsScreen
 import uz.wegrow.invest.ui.screens.portfolio.PortfolioScreen
+import uz.wegrow.invest.ui.screens.profile.MethodologyScreen
+import uz.wegrow.invest.ui.screens.profile.OrdersHistoryScreen
 import uz.wegrow.invest.ui.theme.WeGrowInvestTheme
 import uz.wegrow.invest.ui.theme.WeGrowTheme
 
@@ -46,7 +57,16 @@ enum class AppRoute {
     TICKER_DETAIL,
     HALAL_ANALYSIS,
     CALCULATOR,
-    PORTFOLIO
+    PORTFOLIO,
+    NOTIFICATIONS,
+    NEWS_FEED,
+    NEWS_DETAIL,
+    GOLD_CLUB,
+    STREAMS,
+    BROKERS,
+    CERTIFICATE,
+    ORDERS_HISTORY,
+    METHODOLOGY
 }
 
 class MainActivity : ComponentActivity() {
@@ -57,7 +77,6 @@ class MainActivity : ComponentActivity() {
             val vm: WeGrowViewModel = viewModel()
             val uiState by vm.uiState.collectAsState()
 
-            // Dynamically adapt Edge-to-Edge system bar icon contrast to Dark/Light theme
             DisposableEffect(uiState.isDarkTheme) {
                 enableEdgeToEdge(
                     statusBarStyle = if (uiState.isDarkTheme) {
@@ -75,23 +94,53 @@ class MainActivity : ComponentActivity() {
             }
 
             var currentRoute by remember { mutableStateOf(AppRoute.MAIN_TABS) }
-            var selectedTab by remember { mutableIntStateOf(0) } // 0=Home, 1=Market, 2=Courses, 3=Profile
+            // 5-tab navigation: 0=Home, 1=Market, 2=Portfolio, 3=Courses, 4=Profile
+            var selectedTab by remember { mutableIntStateOf(0) }
             var showGoalsInMain by remember { mutableStateOf(false) }
+            var newsReturnRoute by remember { mutableStateOf(AppRoute.MAIN_TABS) }
+            var calcInitialMode by remember { mutableIntStateOf(0) }
 
             val strings = if (uiState.langCode == "uz") StringsUz else StringsRu
             val activeStock = uiState.activeStock
 
-            // Predictive Back gesture handling
-            BackHandler(enabled = currentRoute != AppRoute.MAIN_TABS || showGoalsInMain || selectedTab != 0) {
-                when {
-                    currentRoute == AppRoute.HALAL_ANALYSIS -> currentRoute = AppRoute.TICKER_DETAIL
-                    currentRoute != AppRoute.MAIN_TABS -> {
-                        currentRoute = if (currentRoute == AppRoute.ONBOARDING) {
-                            AppRoute.LANGUAGE_SELECT
-                        } else {
-                            AppRoute.MAIN_TABS
-                        }
+            fun navigateByStoryAction(action: String) {
+                when (action.uppercase()) {
+                    "METHODOLOGY" -> currentRoute = AppRoute.METHODOLOGY
+                    "PORTFOLIO" -> {
+                        vm.syncPortfolioModule()
+                        showGoalsInMain = false
+                        selectedTab = 2
+                        currentRoute = AppRoute.MAIN_TABS
                     }
+                    "NEWS_FEED" -> currentRoute = AppRoute.NEWS_FEED
+                    "BROKERS" -> currentRoute = AppRoute.BROKERS
+                    "COURSES" -> {
+                        showGoalsInMain = false
+                        selectedTab = 3
+                        currentRoute = AppRoute.MAIN_TABS
+                    }
+                    "GOLD_CLUB" -> currentRoute = AppRoute.GOLD_CLUB
+                    "STREAMS" -> currentRoute = AppRoute.STREAMS
+                    else -> {
+                        showGoalsInMain = false
+                        selectedTab = 1
+                        currentRoute = AppRoute.MAIN_TABS
+                    }
+                }
+            }
+
+            BackHandler(
+                enabled = uiState.activeStoryDeck != null ||
+                    currentRoute != AppRoute.MAIN_TABS ||
+                    showGoalsInMain ||
+                    selectedTab != 0
+            ) {
+                when {
+                    uiState.activeStoryDeck != null -> vm.closeStoryDeck()
+                    currentRoute == AppRoute.HALAL_ANALYSIS -> currentRoute = AppRoute.TICKER_DETAIL
+                    currentRoute == AppRoute.NEWS_DETAIL -> currentRoute = newsReturnRoute
+                    currentRoute == AppRoute.ONBOARDING -> currentRoute = AppRoute.LANGUAGE_SELECT
+                    currentRoute != AppRoute.MAIN_TABS -> currentRoute = AppRoute.MAIN_TABS
                     showGoalsInMain -> showGoalsInMain = false
                     selectedTab != 0 -> selectedTab = 0
                 }
@@ -99,6 +148,26 @@ class MainActivity : ComponentActivity() {
 
             WeGrowInvestTheme(darkTheme = uiState.isDarkTheme) {
                 val colors = WeGrowTheme.colors
+                val subScreens = remember {
+                    setOf(
+                        AppRoute.TICKER_DETAIL,
+                        AppRoute.HALAL_ANALYSIS,
+                        AppRoute.CALCULATOR,
+                        AppRoute.QUESTIONNAIRE,
+                        AppRoute.AUTH,
+                        AppRoute.NOTIFICATIONS,
+                        AppRoute.NEWS_FEED,
+                        AppRoute.NEWS_DETAIL,
+                        AppRoute.GOLD_CLUB,
+                        AppRoute.STREAMS,
+                        AppRoute.BROKERS,
+                        AppRoute.CERTIFICATE,
+                        AppRoute.ORDERS_HISTORY,
+                        AppRoute.METHODOLOGY,
+                        AppRoute.PORTFOLIO
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -108,27 +177,15 @@ class MainActivity : ComponentActivity() {
                     AnimatedContent(
                         targetState = currentRoute,
                         transitionSpec = {
-                            val enteringSubScreen = targetState in listOf(
-                                AppRoute.TICKER_DETAIL,
-                                AppRoute.HALAL_ANALYSIS,
-                                AppRoute.CALCULATOR,
-                                AppRoute.QUESTIONNAIRE,
-                                AppRoute.AUTH
-                            )
-                            val exitingSubScreen = initialState in listOf(
-                                AppRoute.TICKER_DETAIL,
-                                AppRoute.HALAL_ANALYSIS,
-                                AppRoute.CALCULATOR,
-                                AppRoute.QUESTIONNAIRE,
-                                AppRoute.AUTH
-                            )
+                            val enteringSub = targetState in subScreens
+                            val exitingSub = initialState in subScreens
                             when {
-                                enteringSubScreen -> {
+                                enteringSub -> {
                                     (fadeIn(tween(200, easing = FastOutSlowInEasing)) +
                                         slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { it / 6 }) togetherWith
                                         fadeOut(tween(150))
                                 }
-                                exitingSubScreen -> {
+                                exitingSub -> {
                                     fadeIn(tween(180)) togetherWith
                                         (fadeOut(tween(150)) +
                                             slideOutHorizontally(tween(180, easing = FastOutSlowInEasing)) { it / 6 })
@@ -204,8 +261,11 @@ class MainActivity : ComponentActivity() {
                                     activeChartPoints = uiState.activeChart?.takeIf { it.symbol == activeStock.symbol }?.points,
                                     isWatchlisted = activeStock.symbol in uiState.watchlistSymbols,
                                     onToggleWatchlist = { vm.toggleWatchlist(activeStock.symbol) },
-                                    onQuickAlert = {
-                                        vm.createPriceAlert(activeStock.symbol, "ABOVE", activeStock.price * 1.05)
+                                    onCreateAlert = { cond, target ->
+                                        vm.createPriceAlert(activeStock.symbol, cond, target)
+                                    },
+                                    onAddToPortfolio = { sym, side, qty, price ->
+                                        vm.addPortfolioTransaction(sym, side, qty, price)
                                     },
                                     onSelectTimeframe = { tf -> vm.loadStockChart(activeStock.symbol, tf) },
                                     onRefreshStock = { vm.refreshActiveStock() },
@@ -213,6 +273,11 @@ class MainActivity : ComponentActivity() {
                                     onOpenHalalAnalysis = { st ->
                                         vm.selectStock(st)
                                         currentRoute = AppRoute.HALAL_ANALYSIS
+                                    },
+                                    onOpenNewsArticle = { art ->
+                                        vm.openNewsArticle(art.id)
+                                        newsReturnRoute = AppRoute.TICKER_DETAIL
+                                        currentRoute = AppRoute.NEWS_DETAIL
                                     }
                                 )
                             }
@@ -225,6 +290,7 @@ class MainActivity : ComponentActivity() {
                                     alerts = uiState.alerts,
                                     purification = uiState.purification,
                                     strings = strings,
+                                    showBackButton = true,
                                     onBack = { currentRoute = AppRoute.MAIN_TABS },
                                     onOpenStock = { st ->
                                         vm.selectStock(st)
@@ -243,19 +309,160 @@ class MainActivity : ComponentActivity() {
                                 HalalAnalysisScreen(
                                     stock = activeStock,
                                     strings = strings,
-                                    onBack = { currentRoute = AppRoute.TICKER_DETAIL }
+                                    onBack = { currentRoute = AppRoute.TICKER_DETAIL },
+                                    onOpenMethodology = { currentRoute = AppRoute.METHODOLOGY }
                                 )
                             }
 
                             AppRoute.CALCULATOR -> {
                                 CalculatorScreen(
                                     strings = strings,
+                                    portfolioValueUsd = uiState.portfolio.summary.totalValue,
+                                    initialMode = calcInitialMode,
                                     onBack = { currentRoute = AppRoute.MAIN_TABS },
                                     onCreateGoalFromCalc = { title, target, monthly ->
                                         vm.createGoal(title, target, monthly, "Из калькулятора", "Kalkulyatordan")
                                         showGoalsInMain = true
                                         selectedTab = 0
                                         currentRoute = AppRoute.MAIN_TABS
+                                    }
+                                )
+                            }
+
+                            AppRoute.NOTIFICATIONS -> {
+                                NotificationsScreen(
+                                    notifications = uiState.notifications,
+                                    readIds = uiState.readNotificationIds,
+                                    allStocks = uiState.stocks,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onMarkAllRead = { vm.markAllNotificationsRead() },
+                                    onOpenStock = { st ->
+                                        vm.selectStock(st)
+                                        currentRoute = AppRoute.TICKER_DETAIL
+                                    },
+                                    onOpenPortfolio = {
+                                        vm.syncPortfolioModule()
+                                        selectedTab = 2
+                                        showGoalsInMain = false
+                                        currentRoute = AppRoute.MAIN_TABS
+                                    },
+                                    onDeleteAlert = { vm.deletePriceAlert(it) }
+                                )
+                            }
+
+                            AppRoute.NEWS_FEED -> {
+                                NewsFeedScreen(
+                                    news = uiState.news,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onOpenArticle = { art ->
+                                        vm.openNewsArticle(art.id)
+                                        newsReturnRoute = AppRoute.NEWS_FEED
+                                        currentRoute = AppRoute.NEWS_DETAIL
+                                    }
+                                )
+                            }
+
+                            AppRoute.NEWS_DETAIL -> {
+                                val article = uiState.activeNewsItem
+                                NewsDetailScreen(
+                                    article = article,
+                                    relatedStock = uiState.stocks.find { it.symbol == article.ticker },
+                                    otherNews = uiState.news.filterNot { it.id == article.id },
+                                    strings = strings,
+                                    onBack = { currentRoute = newsReturnRoute },
+                                    onOpenStock = { st ->
+                                        vm.selectStock(st)
+                                        currentRoute = AppRoute.TICKER_DETAIL
+                                    },
+                                    onOpenHalalAnalysis = { st ->
+                                        vm.selectStock(st)
+                                        currentRoute = AppRoute.HALAL_ANALYSIS
+                                    },
+                                    onOpenArticle = { next -> vm.openNewsArticle(next.id) }
+                                )
+                            }
+
+                            AppRoute.GOLD_CLUB -> {
+                                GoldClubScreen(
+                                    isJoined = uiState.goldClubJoined,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onJoinPlan = { plan -> vm.joinGoldClubSandbox(plan) },
+                                    onOpenStreams = { currentRoute = AppRoute.STREAMS }
+                                )
+                            }
+
+                            AppRoute.STREAMS -> {
+                                StreamsScreen(
+                                    streams = uiState.streams,
+                                    remindedIds = uiState.remindedStreamIds,
+                                    goldClubJoined = uiState.goldClubJoined,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onToggleReminder = { vm.toggleStreamReminder(it) },
+                                    onOpenGoldClub = { currentRoute = AppRoute.GOLD_CLUB },
+                                    onWatchStream = { session ->
+                                        val isUz = uiState.langCode == "uz"
+                                        vm.showToast(
+                                            if (isUz) "Efir ochildi: ${session.titleUz}"
+                                            else "Запуск эфира: ${session.title}"
+                                        )
+                                    }
+                                )
+                            }
+
+                            AppRoute.BROKERS -> {
+                                BrokersScreen(
+                                    brokers = uiState.brokers,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS }
+                                )
+                            }
+
+                            AppRoute.CERTIFICATE -> {
+                                val firstCourse = uiState.courses.first()
+                                CertificateScreen(
+                                    profile = uiState.profile,
+                                    course = firstCourse,
+                                    completedLessons = uiState.courseLessons.count { it.completed },
+                                    totalLessons = uiState.courseLessons.size.coerceAtLeast(6),
+                                    strings = strings,
+                                    onBack = {
+                                        selectedTab = 3
+                                        currentRoute = AppRoute.MAIN_TABS
+                                    },
+                                    onShareNotice = {
+                                        val isUz = uiState.langCode == "uz"
+                                        vm.showToast(
+                                            if (isUz) "Sertifikat kodi nusxalandi ✓" else "Код верификации сертификата скопирован ✓"
+                                        )
+                                    }
+                                )
+                            }
+
+                            AppRoute.ORDERS_HISTORY -> {
+                                OrdersHistoryScreen(
+                                    orders = uiState.orders,
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onSandboxPay = { uid, cid -> vm.completeSandboxOrder(uid, cid) },
+                                    onOpenCourses = {
+                                        selectedTab = 3
+                                        showGoalsInMain = false
+                                        currentRoute = AppRoute.MAIN_TABS
+                                    }
+                                )
+                            }
+
+                            AppRoute.METHODOLOGY -> {
+                                MethodologyScreen(
+                                    strings = strings,
+                                    onBack = { currentRoute = AppRoute.MAIN_TABS },
+                                    onOpenCalculator = {
+                                        calcInitialMode = 3 // Open directly on Zakat 2.5% tab!
+                                        currentRoute = AppRoute.CALCULATOR
                                     }
                                 )
                             }
@@ -280,7 +487,12 @@ class MainActivity : ComponentActivity() {
                                                     onCreateGoal = { title, target, monthly ->
                                                         vm.createGoal(title, target, monthly)
                                                     },
-                                                    onOpenCalculator = { currentRoute = AppRoute.CALCULATOR }
+                                                    onDeleteGoal = { vm.deleteGoal(it) },
+                                                    onOpenCalculator = {
+                                                        calcInitialMode = 0
+                                                        currentRoute = AppRoute.CALCULATOR
+                                                    },
+                                                    onBack = { showGoalsInMain = false }
                                                 )
                                             }
 
@@ -290,6 +502,9 @@ class MainActivity : ComponentActivity() {
                                                     stocks = uiState.stocks,
                                                     goals = uiState.goals,
                                                     news = uiState.news,
+                                                    stories = uiState.stories,
+                                                    seenStoryIds = uiState.seenStoryIds,
+                                                    unreadNotificationsCount = uiState.unreadNotificationsCount,
                                                     online = uiState.isOnline,
                                                     strings = strings,
                                                     onOpenStock = { st ->
@@ -297,12 +512,23 @@ class MainActivity : ComponentActivity() {
                                                         currentRoute = AppRoute.TICKER_DETAIL
                                                     },
                                                     onOpenGoals = { showGoalsInMain = true },
-                                                    onOpenCalculator = { currentRoute = AppRoute.CALCULATOR },
+                                                    onOpenPortfolio = {
+                                                        vm.syncPortfolioModule()
+                                                        selectedTab = 2
+                                                    },
+                                                    onOpenCalculator = {
+                                                        calcInitialMode = 0
+                                                        currentRoute = AppRoute.CALCULATOR
+                                                    },
+                                                    onOpenBrokers = { currentRoute = AppRoute.BROKERS },
                                                     onOpenMarket = { selectedTab = 1 },
-                                                    onOpenCourses = { selectedTab = 2 },
-                                                    onOpenHalalAnalysis = { st ->
-                                                        vm.selectStock(st)
-                                                        currentRoute = AppRoute.HALAL_ANALYSIS
+                                                    onOpenNotifications = { currentRoute = AppRoute.NOTIFICATIONS },
+                                                    onOpenStory = { deckId -> vm.openStoryDeck(deckId) },
+                                                    onOpenAllNews = { currentRoute = AppRoute.NEWS_FEED },
+                                                    onOpenNewsArticle = { art ->
+                                                        vm.openNewsArticle(art.id)
+                                                        newsReturnRoute = AppRoute.MAIN_TABS
+                                                        currentRoute = AppRoute.NEWS_DETAIL
                                                     },
                                                     onToggleTheme = { vm.setDarkTheme(!uiState.isDarkTheme) },
                                                     onToggleLanguage = {
@@ -326,6 +552,28 @@ class MainActivity : ComponentActivity() {
                                             }
 
                                             2 -> {
+                                                PortfolioScreen(
+                                                    portfolio = uiState.portfolio,
+                                                    watchlistSymbols = uiState.watchlistSymbols,
+                                                    allStocks = uiState.stocks,
+                                                    alerts = uiState.alerts,
+                                                    purification = uiState.purification,
+                                                    strings = strings,
+                                                    showBackButton = false,
+                                                    onOpenStock = { st ->
+                                                        vm.selectStock(st)
+                                                        currentRoute = AppRoute.TICKER_DETAIL
+                                                    },
+                                                    onAddTransaction = { sym, side, qty, price ->
+                                                        vm.addPortfolioTransaction(sym, side, qty, price)
+                                                    },
+                                                    onToggleWatchlist = { vm.toggleWatchlist(it) },
+                                                    onClearPurification = { vm.clearPurification(it) },
+                                                    onDeleteAlert = { vm.deletePriceAlert(it) }
+                                                )
+                                            }
+
+                                            3 -> {
                                                 val firstCourse = uiState.courses.first()
                                                 if (uiState.courseLessons.isNotEmpty() || uiState.activeLesson != null) {
                                                     CourseLmsScreen(
@@ -338,7 +586,8 @@ class MainActivity : ComponentActivity() {
                                                         onCloseLesson = { vm.closeLesson() },
                                                         onCompleteLesson = { lid, ans -> vm.completeLesson(firstCourse.id, lid, ans) },
                                                         onStartOrder = { prov -> vm.startCourseOrder(firstCourse.id, prov) },
-                                                        onSandboxPay = { uid -> vm.completeSandboxOrder(uid, firstCourse.id) }
+                                                        onSandboxPay = { uid -> vm.completeSandboxOrder(uid, firstCourse.id) },
+                                                        onOpenCertificate = { currentRoute = AppRoute.CERTIFICATE }
                                                     )
                                                 } else {
                                                     CourseScreen(
@@ -358,23 +607,32 @@ class MainActivity : ComponentActivity() {
                                                     online = uiState.isOnline,
                                                     isDarkTheme = uiState.isDarkTheme,
                                                     isAuthenticated = uiState.session.isAuthenticated,
+                                                    ordersCount = uiState.orders.size,
+                                                    goldClubJoined = uiState.goldClubJoined,
                                                     strings = strings,
                                                     onUpdateServerUrl = { vm.updateServerUrl(it) },
                                                     onSyncNow = { vm.syncWithServer() },
                                                     onToggleTheme = { vm.setDarkTheme(it) },
                                                     onSwitchLanguage = { vm.setLanguage(it) },
                                                     onOpenQuestionnaire = { currentRoute = AppRoute.QUESTIONNAIRE },
-                                                    onOpenCalculator = { currentRoute = AppRoute.CALCULATOR },
+                                                    onOpenCalculator = {
+                                                        calcInitialMode = 0
+                                                        currentRoute = AppRoute.CALCULATOR
+                                                    },
                                                     onReplayOnboarding = { currentRoute = AppRoute.LANGUAGE_SELECT },
                                                     onOpenAuth = {
                                                         vm.clearAuthStep()
                                                         currentRoute = AppRoute.AUTH
                                                     },
                                                     onLogout = { vm.logout() },
-                                                    onOpenPortfolio = {
-                                                        vm.syncPortfolioModule()
-                                                        currentRoute = AppRoute.PORTFOLIO
-                                                    }
+                                                    onOpenOrders = {
+                                                        vm.syncContentAndOrders()
+                                                        currentRoute = AppRoute.ORDERS_HISTORY
+                                                    },
+                                                    onOpenBrokers = { currentRoute = AppRoute.BROKERS },
+                                                    onOpenMethodology = { currentRoute = AppRoute.METHODOLOGY },
+                                                    onOpenGoldClub = { currentRoute = AppRoute.GOLD_CLUB },
+                                                    onOpenStreams = { currentRoute = AppRoute.STREAMS }
                                                 )
                                             }
                                         }
@@ -386,6 +644,7 @@ class MainActivity : ComponentActivity() {
                                         onSelectTab = { idx ->
                                             showGoalsInMain = false
                                             selectedTab = idx
+                                            if (idx == 2) vm.syncPortfolioModule()
                                         },
                                         modifier = Modifier.align(Alignment.BottomCenter)
                                     )
@@ -393,6 +652,23 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+
+                    // Full-screen Stories Viewer overlay
+                    uiState.activeStoryDeck?.let { deck ->
+                        StoriesViewerOverlay(
+                            deck = deck,
+                            strings = strings,
+                            onClose = { vm.closeStoryDeck() },
+                            onActionRoute = ::navigateByStoryAction
+                        )
+                    }
+
+                    // Global confirmation toast banner
+                    WeGrowToastBanner(
+                        message = uiState.toastMessage,
+                        onDismiss = { vm.clearToast() },
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
                 }
             }
         }

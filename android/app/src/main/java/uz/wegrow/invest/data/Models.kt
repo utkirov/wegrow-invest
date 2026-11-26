@@ -193,7 +193,13 @@ data class NewsItem(
     val source: String,
     val sourceUz: String,
     val ticker: String,
-    val tag: String
+    val tag: String,
+    val summary: String = "",
+    val summaryUz: String = "",
+    val body: String = "",
+    val bodyUz: String = "",
+    val readMin: Int = 3,
+    val publishedAt: String = "26.11.2026"
 )
 
 @Immutable
@@ -323,7 +329,262 @@ data class PaymentOrderInfo(
     val amountUzs: Int,
     val status: String,
     val checkoutUrl: String,
-    val sandboxEnabled: Boolean = true
+    val sandboxEnabled: Boolean = true,
+    val courseTitle: String = "Основы инвестирования в акции США",
+    val courseTitleUz: String = "AQSh aksiyalariga investitsiya asoslari",
+    val createdAt: String? = null,
+    val paidAt: String? = null
 )
+
+@Immutable
+data class StorySlide(
+    val eyebrow: String,
+    val eyebrowUz: String,
+    val title: String,
+    val titleUz: String,
+    val body: String,
+    val bodyUz: String,
+    val ctaLabel: String,
+    val ctaLabelUz: String,
+    val actionRoute: String
+)
+
+@Immutable
+data class StoryDeck(
+    val id: String,
+    val label: String,
+    val labelUz: String,
+    val badgeSymbol: String,
+    val slides: List<StorySlide>
+)
+
+@Immutable
+data class BrokerInfo(
+    val id: String,
+    val name: String,
+    val badge: String,
+    val badgeUz: String,
+    val jurisdiction: String,
+    val minDeposit: String,
+    val commission: String,
+    val usStocks: Boolean,
+    val halalCashAccount: Boolean,
+    val uzCardFunding: Boolean,
+    val fundingMethods: String,
+    val fundingMethodsUz: String,
+    val halalNote: String,
+    val halalNoteUz: String,
+    val pros: List<String>,
+    val prosUz: List<String>,
+    val cons: List<String>,
+    val consUz: List<String>,
+    val rating: Double
+)
+
+@Immutable
+data class StreamSession(
+    val id: Int,
+    val title: String,
+    val titleUz: String,
+    val speaker: String,
+    val speakerRole: String,
+    val speakerRoleUz: String,
+    val dateLabel: String,
+    val dateLabelUz: String,
+    val durationMin: Int,
+    val status: String, // LIVE | UPCOMING | RECORDED
+    val isGoldClub: Boolean,
+    val topicTag: String,
+    val topicTagUz: String
+)
+
+@Immutable
+data class AppNotificationItem(
+    val id: String,
+    val category: String, // ALERT | HALAL | PURIFICATION | DIGEST
+    val title: String,
+    val titleUz: String,
+    val body: String,
+    val bodyUz: String,
+    val badge: String,
+    val symbol: String? = null,
+    val alertId: Int? = null,
+    val isUrgent: Boolean = false
+)
+
+@Immutable
+data class ZakatCalculationResult(
+    val grossAssetsUsd: Double,
+    val netZakatableUsd: Double,
+    val nisabUsd: Double,
+    val isAboveNisab: Boolean,
+    val zakatDueUsd: Double,
+    val zakatMonthlyProvisionUsd: Double
+)
+
+object ZakatCalculatorEngine {
+    const val DEFAULT_NISAB_USD = 7200.0 // ~85g of gold
+    const val ZAKAT_RATE = 0.025
+
+    fun calculate(
+        cashUsd: Double,
+        halalStocksUsd: Double,
+        goldAndCryptoUsd: Double,
+        shortTermDebtUsd: Double,
+        nisabUsd: Double = DEFAULT_NISAB_USD
+    ): ZakatCalculationResult {
+        val gross = (cashUsd.coerceAtLeast(0.0) +
+            halalStocksUsd.coerceAtLeast(0.0) +
+            goldAndCryptoUsd.coerceAtLeast(0.0))
+        val net = (gross - shortTermDebtUsd.coerceAtLeast(0.0)).coerceAtLeast(0.0)
+        val safeNisab = nisabUsd.coerceAtLeast(1.0)
+        val above = net >= safeNisab
+        val due = if (above) net * ZAKAT_RATE else 0.0
+        return ZakatCalculationResult(
+            grossAssetsUsd = gross,
+            netZakatableUsd = net,
+            nisabUsd = safeNisab,
+            isAboveNisab = above,
+            zakatDueUsd = due,
+            zakatMonthlyProvisionUsd = due / 12.0
+        )
+    }
+}
+
+@Immutable
+data class CalculatorProjection(
+    val totalSeries: List<Float>,
+    val investedSeries: List<Float>,
+    val finalTotal: Double,
+    val finalInvested: Double,
+    val finalProfit: Double,
+    val annualPassiveIncome: Double,
+    val monthlyPassiveIncome: Double,
+    val annualPurificationUsd: Double
+)
+
+object FinancialCalculatorEngine {
+    /**
+     * mode: 0 = Compound Growth, 1 = Dividend Income (reinvested yield + purification), 2 = Safe Withdrawal (FIRE 4% / yield)
+     */
+    fun compute(
+        mode: Int,
+        initialAmount: Double,
+        monthlyTopUp: Double,
+        annualYieldPct: Double,
+        years: Int,
+        periodsPerYear: Int,
+        avgImpureRatioPct: Double = 1.2
+    ): CalculatorProjection {
+        val yInt = years.coerceIn(1, 40)
+        val n = periodsPerYear.coerceAtLeast(1).toDouble()
+        val rate = (annualYieldPct / 100.0).coerceAtLeast(0.0)
+
+        val totals = mutableListOf<Float>()
+        val invs = mutableListOf<Float>()
+
+        when (mode) {
+            1 -> {
+                // Dividend Growth mode: annual dividend payout grows via capital appreciation (rate * 0.65) + dividend yield (rate * 0.35)
+                val divYield = (annualYieldPct.coerceIn(1.0, 12.0) / 100.0)
+                val priceGrowth = (rate * 0.6).coerceAtLeast(0.02)
+                var portfolioVal = initialAmount
+                var cumulativeDividendsNet = 0.0
+                totals.add(portfolioVal.toFloat())
+                invs.add(initialAmount.toFloat())
+                for (y in 1..yInt) {
+                    val yearlyContrib = monthlyTopUp * 12.0
+                    portfolioVal = (portfolioVal + yearlyContrib) * (1.0 + priceGrowth)
+                    val grossDiv = portfolioVal * divYield
+                    val impureCut = grossDiv * (avgImpureRatioPct / 100.0)
+                    val netDiv = (grossDiv - impureCut).coerceAtLeast(0.0)
+                    cumulativeDividendsNet += netDiv
+                    portfolioVal += netDiv
+                    totals.add(portfolioVal.toFloat())
+                    invs.add((initialAmount + yearlyContrib * y).toFloat())
+                }
+                val finalTotal = totals.last().toDouble()
+                val finalInv = invs.last().toDouble()
+                val finalGrossDiv = finalTotal * divYield
+                val finalPurif = finalGrossDiv * (avgImpureRatioPct / 100.0)
+                val finalNetAnnualDiv = (finalGrossDiv - finalPurif).coerceAtLeast(0.0)
+                return CalculatorProjection(
+                    totalSeries = totals,
+                    investedSeries = invs,
+                    finalTotal = finalTotal,
+                    finalInvested = finalInv,
+                    finalProfit = (finalTotal - finalInv).coerceAtLeast(0.0),
+                    annualPassiveIncome = finalNetAnnualDiv,
+                    monthlyPassiveIncome = finalNetAnnualDiv / 12.0,
+                    annualPurificationUsd = finalPurif
+                )
+            }
+
+            2 -> {
+                // FIRE / Safe Withdrawal mode: initialAmount is starting capital, monthlyTopUp is desired monthly withdrawal,
+                // annualYieldPct is portfolio return. Tracks capital sustainability over years.
+                var balance = initialAmount.coerceAtLeast(1000.0)
+                val annualDraw = monthlyTopUp * 12.0
+                var cumulativeWithdrawn = 0.0
+                totals.add(balance.toFloat())
+                invs.add(0f)
+                for (y in 1..yInt) {
+                    val grown = balance * (1.0 + rate)
+                    val actualDraw = annualDraw.coerceAtMost(grown)
+                    balance = (grown - actualDraw).coerceAtLeast(0.0)
+                    cumulativeWithdrawn += actualDraw
+                    totals.add(balance.toFloat())
+                    invs.add(cumulativeWithdrawn.toFloat())
+                }
+                val safeAnnual4Pct = balance * 0.04
+                return CalculatorProjection(
+                    totalSeries = totals,
+                    investedSeries = invs,
+                    finalTotal = balance,
+                    finalInvested = cumulativeWithdrawn,
+                    finalProfit = (balance + cumulativeWithdrawn - initialAmount).coerceAtLeast(0.0),
+                    annualPassiveIncome = safeAnnual4Pct,
+                    monthlyPassiveIncome = safeAnnual4Pct / 12.0,
+                    annualPurificationUsd = 0.0
+                )
+            }
+
+            else -> {
+                for (y in 0..yInt) {
+                    val inv = initialAmount + monthlyTopUp * 12.0 * y
+                    invs.add(inv.toFloat())
+                    if (y == 0) {
+                        totals.add(initialAmount.toFloat())
+                    } else {
+                        val rPerPeriod = rate / n
+                        val totalPeriods = n * y
+                        val compoundPrincipal = initialAmount * Math.pow(1.0 + rPerPeriod, totalPeriods)
+                        val contribPerPeriod = monthlyTopUp * (12.0 / n)
+                        val compoundContrib = if (rPerPeriod > 0.00001) {
+                            contribPerPeriod * ((Math.pow(1.0 + rPerPeriod, totalPeriods) - 1.0) / rPerPeriod)
+                        } else {
+                            contribPerPeriod * totalPeriods
+                        }
+                        totals.add((compoundPrincipal + compoundContrib).toFloat())
+                    }
+                }
+                val finalTotal = totals.last().toDouble()
+                val finalInv = invs.last().toDouble()
+                val safeAnnual = finalTotal * 0.04
+                return CalculatorProjection(
+                    totalSeries = totals,
+                    investedSeries = invs,
+                    finalTotal = finalTotal,
+                    finalInvested = finalInv,
+                    finalProfit = (finalTotal - finalInv).coerceAtLeast(0.0),
+                    annualPassiveIncome = safeAnnual,
+                    monthlyPassiveIncome = safeAnnual / 12.0,
+                    annualPurificationUsd = 0.0
+                )
+            }
+        }
+    }
+}
+
 
 

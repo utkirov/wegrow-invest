@@ -9,16 +9,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import uz.wegrow.invest.data.AppNotificationItem
 import uz.wegrow.invest.data.AuthSession
 import uz.wegrow.invest.data.AuthSessionStore
+import uz.wegrow.invest.data.BrokerInfo
 import uz.wegrow.invest.data.CourseItem
 import uz.wegrow.invest.data.FinancialGoal
 import uz.wegrow.invest.data.MarketIndex
 import uz.wegrow.invest.data.NewsItem
 import uz.wegrow.invest.data.OtpRequestResult
+import uz.wegrow.invest.data.PaymentOrderInfo
 import uz.wegrow.invest.data.SectorHeatTile
 import uz.wegrow.invest.data.StockChartData
 import uz.wegrow.invest.data.StockItem
+import uz.wegrow.invest.data.StoryDeck
+import uz.wegrow.invest.data.StreamSession
 import uz.wegrow.invest.data.UserProfile
 import uz.wegrow.invest.data.WeGrowApiClient
 import uz.wegrow.invest.data.WeGrowRepository
@@ -52,11 +57,88 @@ data class WeGrowUiState(
     val purification: uz.wegrow.invest.data.PurificationLedger = uz.wegrow.invest.data.PurificationLedger(),
     val courseLessons: List<uz.wegrow.invest.data.CourseLessonSummary> = emptyList(),
     val activeLesson: uz.wegrow.invest.data.LessonDetail? = null,
-    val pendingOrder: uz.wegrow.invest.data.PaymentOrderInfo? = null
+    val pendingOrder: PaymentOrderInfo? = null,
+    // v4.1 additions
+    val orders: List<PaymentOrderInfo> = emptyList(),
+    val stories: List<StoryDeck> = emptyList(),
+    val brokers: List<BrokerInfo> = emptyList(),
+    val streams: List<StreamSession> = emptyList(),
+    val seenStoryIds: Set<String> = emptySet(),
+    val readNotificationIds: Set<String> = emptySet(),
+    val remindedStreamIds: Set<Int> = emptySet(),
+    val goldClubJoined: Boolean = false,
+    val activeNewsId: Int? = null,
+    val activeStoryDeckId: String? = null,
+    val toastMessage: String? = null
 ) {
     val activeStock: StockItem
         get() = stocks.find { it.symbol == activeStockSymbol } ?: stocks.firstOrNull()
             ?: WeGrowRepository.defaultFallbackData().stocks.first()
+
+    val activeNewsItem: NewsItem
+        get() = news.find { it.id == activeNewsId } ?: news.firstOrNull()
+            ?: WeGrowRepository.defaultFallbackData().news.first()
+
+    val activeStoryDeck: StoryDeck?
+        get() = stories.find { it.id == activeStoryDeckId }
+
+    val notifications: List<AppNotificationItem>
+        get() {
+            val list = mutableListOf<AppNotificationItem>()
+            alerts.forEach { al ->
+                list += AppNotificationItem(
+                    id = "alert_${al.id}",
+                    category = "ALERT",
+                    title = if (al.triggered) "Сработал алерт ${al.symbol}" else "Активный алерт ${al.symbol}",
+                    titleUz = if (al.triggered) "${al.symbol} alerti ishga tushdi" else "${al.symbol} faol alerti",
+                    body = al.message.ifBlank { "${al.condition} $${String.format("%.2f", al.targetPrice)}" },
+                    bodyUz = al.message.ifBlank { "${al.condition} $${String.format("%.2f", al.targetPrice)}" },
+                    badge = if (al.triggered) "Сработал" else "Активен",
+                    symbol = al.symbol,
+                    alertId = al.id,
+                    isUrgent = al.triggered
+                )
+            }
+            portfolio.warnings.forEach { w ->
+                list += AppNotificationItem(
+                    id = "warn_${w.symbol}",
+                    category = "HALAL",
+                    title = "Проверка халяльности: ${w.symbol}",
+                    titleUz = "Halollik ogohlantirishi: ${w.symbol}",
+                    body = "${w.name} имеет статус ${w.halalStatus.name}. ${w.reason}",
+                    bodyUz = "${w.name} maqomi: ${w.halalStatus.name}. ${w.reason}",
+                    badge = w.halalStatus.name,
+                    symbol = w.symbol,
+                    isUrgent = true
+                )
+            }
+            if (purification.totalPendingUsd > 0.0005) {
+                list += AppNotificationItem(
+                    id = "purif_${purification.quarterLabel}",
+                    category = "PURIFICATION",
+                    title = "Очищение дивидендов (${purification.quarterLabel})",
+                    titleUz = "Dividend poklash (${purification.quarterLabel})",
+                    body = "К направлению на благотворительность: $${String.format("%.3f", purification.totalPendingUsd)}",
+                    bodyUz = "Xayriyaga ajratish kerak: $${String.format("%.3f", purification.totalPendingUsd)}",
+                    badge = "Тазкия",
+                    isUrgent = true
+                )
+            }
+            list += AppNotificationItem(
+                id = "digest_aaoifi_q3",
+                category = "DIGEST",
+                title = "Аудит AAOIFI за III квартал 2026 завершён",
+                titleUz = "2026-yil III chorak AAOIFI auditi yakunlandi",
+                body = "Проверено 105 компаний США: 82 Халяль, 3 Сомнительно, 20 Не халяль.",
+                bodyUz = "AQShning 105 kompaniyasi tekshirildi: 82 Halol, 3 Shubhali, 20 Halol emas.",
+                badge = "AAOIFI",
+                symbol = "AAPL"
+            )
+            return list
+        }
+
+    val unreadNotificationsCount: Int
+        get() = notifications.count { it.id !in readNotificationIds }
 }
 
 class WeGrowViewModel(application: Application) : AndroidViewModel(application) {
@@ -81,7 +163,10 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
             heatmap = fallback.heatmap,
             marketOpenTextRu = fallback.marketOpenTextRu,
             marketOpenTextUz = fallback.marketOpenTextUz,
-            activeStockSymbol = fallback.stocks.first().symbol
+            activeStockSymbol = fallback.stocks.first().symbol,
+            stories = WeGrowRepository.defaultStories(),
+            brokers = WeGrowRepository.defaultBrokers(),
+            streams = WeGrowRepository.defaultStreams()
         )
     )
     val uiState: StateFlow<WeGrowUiState> = _uiState.asStateFlow()
@@ -129,6 +214,7 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
             if (data.online) {
                 syncPortfolioModule()
                 syncCourseLms()
+                syncContentAndOrders()
             }
         }
     }
@@ -405,15 +491,23 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addPortfolioTransaction(symbol: String, side: String, quantity: Double, price: Double) {
         val state = _uiState.value
+        val sym = symbol.trim().uppercase()
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
             val updated = WeGrowApiClient.addPortfolioTransaction(
-                state.serverUrl, state.session, symbol, side, quantity, price, ::handleSessionRefreshed
+                state.serverUrl, state.session, sym, side, quantity, price, ::handleSessionRefreshed
             )
             if (updated != null) {
                 val ledger = WeGrowApiClient.fetchPurification(state.serverUrl, state.session, ::handleSessionRefreshed)
                 _uiState.update { s ->
-                    s.copy(portfolio = updated, purification = ledger ?: s.purification)
+                    s.copy(
+                        portfolio = updated,
+                        purification = ledger ?: s.purification,
+                        toastMessage = if (isUz) "$sym bitimi portfelga qo'shildi ✓" else "Сделка $sym добавлена в портфель ✓"
+                    )
                 }
+            } else {
+                showToast(if (isUz) "Server bilan aloqa yo'q" else "Не удалось сохранить сделку (проверьте сервер)")
             }
         }
     }
@@ -422,7 +516,17 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
         val sym = symbol.uppercase()
         val currentlyIn = sym in _uiState.value.watchlistSymbols
         val nextSet = if (currentlyIn) _uiState.value.watchlistSymbols - sym else _uiState.value.watchlistSymbols + sym
-        _uiState.update { it.copy(watchlistSymbols = nextSet) }
+        val isUz = _uiState.value.langCode == "uz"
+        _uiState.update {
+            it.copy(
+                watchlistSymbols = nextSet,
+                toastMessage = if (currentlyIn) {
+                    if (isUz) "$sym tanlanganlardan olib tashlandi" else "$sym удалена из избранного"
+                } else {
+                    if (isUz) "$sym tanlanganlarga qo'shildi ★" else "$sym добавлена в избранное ★"
+                }
+            )
+        }
         val state = _uiState.value
         viewModelScope.launch {
             WeGrowApiClient.setWatchlistSymbol(state.serverUrl, state.session, sym, add = !currentlyIn, ::handleSessionRefreshed)
@@ -431,10 +535,37 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
 
     fun createPriceAlert(symbol: String, condition: String, targetPrice: Double) {
         val state = _uiState.value
+        val sym = symbol.trim().uppercase()
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
-            if (WeGrowApiClient.createAlert(state.serverUrl, state.session, symbol, condition, targetPrice, ::handleSessionRefreshed)) {
+            val ok = WeGrowApiClient.createAlert(state.serverUrl, state.session, sym, condition, targetPrice, ::handleSessionRefreshed)
+            if (ok) {
                 val alerts = WeGrowApiClient.fetchAlerts(state.serverUrl, state.session, ::handleSessionRefreshed)
-                if (alerts != null) _uiState.update { it.copy(alerts = alerts) }
+                _uiState.update { s ->
+                    s.copy(
+                        alerts = alerts ?: s.alerts,
+                        toastMessage = if (isUz) "Alert yaratildi: $sym $${String.format("%.2f", targetPrice)} 🔔"
+                        else "Алерт создан: $sym $${String.format("%.2f", targetPrice)} 🔔"
+                    )
+                }
+            } else {
+                // Local fallback alert when offline so UI remains interactive
+                val localId = ((_uiState.value.alerts.maxOfOrNull { it.id } ?: 100) + 1)
+                val localAlert = uz.wegrow.invest.data.PriceAlertItem(
+                    id = localId,
+                    symbol = sym,
+                    condition = condition,
+                    targetPrice = targetPrice,
+                    active = true,
+                    triggered = false,
+                    message = "$condition $${String.format("%.2f", targetPrice)}"
+                )
+                _uiState.update { s ->
+                    s.copy(
+                        alerts = listOf(localAlert) + s.alerts,
+                        toastMessage = if (isUz) "Lokal alert saqlandi: $sym 🔔" else "Алерт сохранён локально: $sym 🔔"
+                    )
+                }
             }
         }
     }
@@ -449,11 +580,31 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
 
     fun clearPurification(item: uz.wegrow.invest.data.PurificationItem) {
         val state = _uiState.value
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
             val ledger = WeGrowApiClient.clearPurification(state.serverUrl, state.session, item, ::handleSessionRefreshed)
             if (ledger != null) {
-                _uiState.update { it.copy(purification = ledger) }
+                _uiState.update {
+                    it.copy(
+                        purification = ledger,
+                        toastMessage = if (isUz) "${item.symbol} poklash bajarildi ✓" else "Очищение ${item.symbol} отмечено ✓"
+                    )
+                }
             }
+        }
+    }
+
+    fun deleteGoal(goalId: Int) {
+        val isUz = _uiState.value.langCode == "uz"
+        _uiState.update { s ->
+            s.copy(
+                goals = s.goals.filterNot { it.id == goalId },
+                toastMessage = if (isUz) "Maqsad o'chirildi" else "Цель удалена"
+            )
+        }
+        val state = _uiState.value
+        viewModelScope.launch {
+            WeGrowApiClient.deleteGoal(state.serverUrl, state.session, goalId, ::handleSessionRefreshed)
         }
     }
 
@@ -491,34 +642,133 @@ class WeGrowViewModel(application: Application) : AndroidViewModel(application) 
 
     fun completeLesson(courseId: Int, lessonId: Int, quizAnswers: Map<String, Int>?) {
         val state = _uiState.value
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
             WeGrowApiClient.submitLessonProgress(
                 state.serverUrl, state.session, courseId, lessonId, true, quizAnswers, ::handleSessionRefreshed
             )
             syncCourseLms(courseId)
-            _uiState.update { it.copy(activeLesson = null) }
+            _uiState.update {
+                it.copy(
+                    activeLesson = null,
+                    toastMessage = if (isUz) "Dars yakunlandi ✓" else "Урок отмечен пройденным ✓"
+                )
+            }
         }
     }
 
     fun startCourseOrder(courseId: Int, provider: String) {
         val state = _uiState.value
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
             val order = WeGrowApiClient.createPaymentOrder(state.serverUrl, state.session, courseId, provider, ::handleSessionRefreshed)
             if (order != null) {
-                _uiState.update { it.copy(pendingOrder = order) }
+                _uiState.update { s ->
+                    s.copy(
+                        pendingOrder = order,
+                        orders = listOf(order) + s.orders.filterNot { it.orderUid == order.orderUid },
+                        toastMessage = if (isUz) "Buyurtma ${order.orderUid} yaratildi" else "Заказ ${order.orderUid} создан"
+                    )
+                }
             }
         }
     }
 
     fun completeSandboxOrder(orderUid: String, courseId: Int = 1) {
         val state = _uiState.value
+        val isUz = state.langCode == "uz"
         viewModelScope.launch {
             val paid = WeGrowApiClient.sandboxPayOrder(state.serverUrl, state.session, orderUid, ::handleSessionRefreshed)
             if (paid != null) {
-                _uiState.update { it.copy(pendingOrder = paid) }
+                _uiState.update { s ->
+                    s.copy(
+                        pendingOrder = paid,
+                        orders = s.orders.map { if (it.orderUid == paid.orderUid) paid else it },
+                        toastMessage = if (isUz) "To'lov tasdiqlandi! Kurs ochildi ✓" else "Оплата подтверждена! Доступ открыт ✓"
+                    )
+                }
                 syncCourseLms(courseId)
                 syncWithServer()
             }
         }
     }
+
+    // ---- v4.1: Content, Stories, Notifications, Gold Club, Streams ----
+
+    fun syncContentAndOrders() {
+        val state = _uiState.value
+        viewModelScope.launch {
+            val orders = WeGrowApiClient.fetchUserOrders(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val stories = WeGrowApiClient.fetchStories(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val brokers = WeGrowApiClient.fetchBrokers(state.serverUrl, state.session, ::handleSessionRefreshed)
+            val streams = WeGrowApiClient.fetchStreams(state.serverUrl, state.session, ::handleSessionRefreshed)
+            _uiState.update { s ->
+                s.copy(
+                    orders = orders ?: s.orders,
+                    stories = stories?.takeIf { it.isNotEmpty() } ?: s.stories,
+                    brokers = brokers?.takeIf { it.isNotEmpty() } ?: s.brokers,
+                    streams = streams?.takeIf { it.isNotEmpty() } ?: s.streams
+                )
+            }
+        }
+    }
+
+    fun openNewsArticle(newsId: Int) {
+        _uiState.update { it.copy(activeNewsId = newsId) }
+    }
+
+    fun openStoryDeck(deckId: String) {
+        _uiState.update {
+            it.copy(
+                activeStoryDeckId = deckId,
+                seenStoryIds = it.seenStoryIds + deckId
+            )
+        }
+    }
+
+    fun closeStoryDeck() {
+        _uiState.update { it.copy(activeStoryDeckId = null) }
+    }
+
+    fun markAllNotificationsRead() {
+        _uiState.update { s ->
+            s.copy(readNotificationIds = s.readNotificationIds + s.notifications.map { it.id })
+        }
+    }
+
+    fun toggleStreamReminder(streamId: Int) {
+        val isUz = _uiState.value.langCode == "uz"
+        _uiState.update { s ->
+            val exists = streamId in s.remindedStreamIds
+            val next = if (exists) s.remindedStreamIds - streamId else s.remindedStreamIds + streamId
+            s.copy(
+                remindedStreamIds = next,
+                toastMessage = if (exists) {
+                    if (isUz) "Efir eslatmasi o'chirildi" else "Напоминание об эфире отключено"
+                } else {
+                    if (isUz) "Efir boshlanishidan oldin eslatamiz 🔔" else "Напомним перед началом эфира 🔔"
+                }
+            )
+        }
+    }
+
+    fun joinGoldClubSandbox(planLabel: String) {
+        val isUz = _uiState.value.langCode == "uz"
+        _uiState.update {
+            it.copy(
+                goldClubJoined = true,
+                toastMessage = if (isUz) "Gold Club ($planLabel) faollashtirildi 👑"
+                else "Подписка Gold Club ($planLabel) активирована 👑"
+            )
+        }
+    }
+
+    fun showToast(message: String) {
+        _uiState.update { it.copy(toastMessage = message) }
+    }
+
+    fun clearToast() {
+        _uiState.update { it.copy(toastMessage = null) }
+    }
 }
+

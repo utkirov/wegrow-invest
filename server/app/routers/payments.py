@@ -31,13 +31,19 @@ def _resolve_user(db: Session, optional_user: Optional[User]) -> User:
     return user
 
 
-def _order_to_dict(order: PaymentOrder) -> dict:
+def _order_to_dict(order: PaymentOrder, course_titles: Optional[Dict[int, tuple[str, str]]] = None) -> dict:
     checkout_url = (
         build_payme_checkout_url(order) if order.provider == "PAYME" else build_click_checkout_url(order)
+    )
+    title_ru, title_uz = (course_titles or {}).get(
+        order.course_id,
+        ("Основы инвестирования в акции США", "AQSh aksiyalariga investitsiya asoslari"),
     )
     return {
         "order_uid": order.order_uid,
         "course_id": order.course_id,
+        "course_title": title_ru,
+        "course_title_uz": title_uz,
         "provider": order.provider,
         "amount_uzs": order.amount_uzs,
         "amount_tiyin": order.amount_tiyin,
@@ -47,6 +53,34 @@ def _order_to_dict(order: PaymentOrder) -> dict:
         "created_at": order.created_at.isoformat() if order.created_at else None,
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
     }
+
+
+def _load_course_titles(db: Session) -> Dict[int, tuple[str, str]]:
+    result: Dict[int, tuple[str, str]] = {}
+    for row in db.query(Course).all():
+        try:
+            p = json.loads(row.payload_json)
+            result[row.id] = (p.get("title", f"Курс #{row.id}"), p.get("title_uz", p.get("title", f"Kurs #{row.id}")))
+        except Exception:
+            result[row.id] = (f"Курс #{row.id}", f"Kurs #{row.id}")
+    return result
+
+
+@router.get("/orders")
+def list_user_orders(
+    optional_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    user = _resolve_user(db, optional_user)
+    rows = (
+        db.query(PaymentOrder)
+        .filter(PaymentOrder.user_id == user.id)
+        .order_by(PaymentOrder.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    titles = _load_course_titles(db)
+    return {"orders": [_order_to_dict(o, titles) for o in rows]}
 
 
 @router.post("/orders")
@@ -75,7 +109,8 @@ def create_order(
     db.add(order)
     db.commit()
     db.refresh(order)
-    return {"status": "ok", "order": _order_to_dict(order)}
+    titles = {course.id: (payload.get("title", ""), payload.get("title_uz", payload.get("title", "")))}
+    return {"status": "ok", "order": _order_to_dict(order, titles)}
 
 
 @router.get("/orders/{order_uid}")

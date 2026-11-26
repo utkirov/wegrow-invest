@@ -59,7 +59,8 @@ fun PortfolioScreen(
     alerts: List<PriceAlertItem>,
     purification: PurificationLedger,
     strings: AppStrings,
-    onBack: () -> Unit,
+    showBackButton: Boolean = false,
+    onBack: () -> Unit = {},
     onOpenStock: (StockItem) -> Unit,
     onAddTransaction: (symbol: String, side: String, quantity: Double, price: Double) -> Unit,
     onToggleWatchlist: (String) -> Unit,
@@ -72,6 +73,17 @@ fun PortfolioScreen(
 
     val watchlistStocks = remember(watchlistSymbols, allStocks) {
         allStocks.filter { it.symbol in watchlistSymbols }
+    }
+
+    val sectorAllocation = remember(portfolio.positions, isUz) {
+        val total = portfolio.positions.sumOf { it.marketValue }.coerceAtLeast(0.01)
+        portfolio.positions
+            .groupBy { if (isUz) it.sectorUz else it.sector }
+            .map { (sec, list) ->
+                val sumVal = list.sumOf { it.marketValue }
+                sec to ((sumVal / total) * 100.0).toFloat()
+            }
+            .sortedByDescending { it.second }
     }
 
     LazyColumn(
@@ -87,22 +99,30 @@ fun PortfolioScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .bouncyClickable(haptic = true, onClick = onBack)
-                        .clip(CircleShape)
-                        .background(colors.surface)
-                        .border(1.dp, colors.border, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
+                if (showBackButton) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .bouncyClickable(haptic = true, onClick = onBack)
+                            .clip(CircleShape)
+                            .background(colors.surface)
+                            .border(1.dp, colors.border, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "←", style = WeGrowTextStyles.TitleL, color = colors.textPrimary)
+                    }
+                    Text(
+                        text = if (isUz) "Investitsiya portfeli" else "Инвестиционный портфель",
+                        style = WeGrowTextStyles.TitleL,
+                        color = colors.textPrimary
+                    )
+                } else {
+                    Text(
+                        text = strings.navPortfolio,
+                        style = WeGrowTextStyles.DisplayM,
+                        color = colors.textPrimary
+                    )
                 }
-                Text(
-                    text = if (isUz) "Investitsiya portfeli" else "Инвестиционный портфель",
-                    style = WeGrowTextStyles.TitleL,
-                    color = colors.textPrimary
-                )
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -170,6 +190,64 @@ fun PortfolioScreen(
                         onClick = { showAddDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+            }
+        }
+
+        if (sectorAllocation.isNotEmpty()) {
+            item(key = "portfolio_allocation") {
+                val barPalette = listOf(colors.brandPrimary, colors.statusHalal, colors.accent, colors.saffron, colors.statusDoubt)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(WeGrowRadius.xl))
+                        .background(colors.surface)
+                        .border(1.dp, colors.border, RoundedCornerShape(WeGrowRadius.xl))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = if (isUz) "Sektorlar bo'yicha taqsimot" else "Распределение по секторам",
+                        style = WeGrowTextStyles.TitleS,
+                        color = colors.textPrimary
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(WeGrowRadius.full)),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        sectorAllocation.forEachIndexed { idx, (_, pct) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(pct.coerceAtLeast(3f))
+                                    .height(10.dp)
+                                    .background(barPalette[idx % barPalette.size])
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        sectorAllocation.take(3).forEachIndexed { idx, (name, pct) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(barPalette[idx % barPalette.size])
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "$name ${pct.toInt()}%",
+                                    style = WeGrowTextStyles.CaptionM,
+                                    color = colors.textSecondary
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -421,7 +499,7 @@ fun PortfolioScreen(
 }
 
 @Composable
-private fun AddTransactionDialog(
+fun AddTransactionDialog(
     isUz: Boolean,
     defaultSymbol: String,
     defaultPrice: Double,
@@ -436,7 +514,7 @@ private fun AddTransactionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = colors.surface,
+        containerColor = colors.surfaceSolid,
         title = {
             Text(
                 text = if (isUz) "Yangi bitim" else "Новая сделка",
